@@ -1,0 +1,282 @@
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  color: #18212f;
+  background: #f6f7f9;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+.page,
+.form {
+  max-width: 620px;
+  margin: auto;
+  padding: 16px;
+}
+.page {
+  min-height: 100vh;
+}
+header {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 700;
+}
+header > button {
+  border: 0;
+  background: none;
+  font-size: 30px;
+  padding: 0 12px 0 0;
+}
+.login {
+  min-height: 100dvh;
+  background: #fff;
+}
+.login section {
+  background: #edf6f2;
+  padding: max(28px, env(safe-area-inset-top)) 24px 25px;
+  min-height: 0;
+  text-align: center;
+}
+.login-logo { display: block; width: min(210px, 58vw); height: auto; margin: 0 auto 14px; mix-blend-mode: multiply; }
+.login h1 {
+  margin: 0;
+  font-size: 23px;
+  letter-spacing: .03em;
+}
+.login section p {
+  margin: 8px 0 0;
+  color: #5f726c;
+  font-size: 13px;
+}
+.login form {
+  width: min(100%, 440px);
+  margin: 0 auto;
+  padding: 28px 24px max(28px, env(safe-area-inset-bottom));
+}
+.login form label {
+  display: block;
+  margin-bottom: 18px;
+  color: #344050;
+  font-size: 14px;
+  font-weight: 600;
+}
+.login form input {
+  display: block;
+  width: 100%;
+  height: 48px;
+  margin-top: 8px;
+  padding: 0 13px;
+  border: 1px solid #d5dfda;
+  border-radius: 8px;
+  background: #f9fbfa;
+  outline: none;
+}
+.login form input:focus { border-color: #146c5d; background: #fff; box-shadow: 0 0 0 3px rgba(20, 108, 93, .1); }
+.login form input::placeholder { color: #9aa6a2; }
+.field {
+  margin-bottom: 19px;
+}
+.field label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #344050;
+}
+.field-note { display: block; margin-top: 7px; color: #718078; font-size: 12px; line-height: 1.5; }
+.field input,
+.field select {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #d6dce5;
+  border-radius: 5px;
+  background: #fff;
+}
+.form > button,
+.login form > button {
+  height: 48px;
+  width: 100%;
+  border: 0;
+  border-radius: 5px;
+  background: #146c5d;
+  color: #fff;
+  font-weight: 600;
+}
+@media (max-height: 680px) {
+  .login section { padding-top: max(16px, env(safe-area-inset-top)); padding-bottom: 16px; }
+  .login-logo { width: min(150px, 42vw); margin-bottom: 7px; }
+  .login h1 { font-size: 20px; }
+  .login section p { margin-top: 4px; }
+  .login form { padding-top: 18px; }
+  .login .field { margin-bottom: 13px; }
+}
+.avatars,
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.avatars button,
+.choices button,
+.twos button {
+  border: 1px solid #d6dce5;
+  border-radius: 5px;
+  padding: 9px 12px;
+  background: #fff;
+  color: #5f6b7a;
+}
+.avatars button {
+  height: 42px;
+  width: 42px;
+  border-radius: 50%;
+  padding: 0;
+  font-size: 20px;
+}
+.selected {
+  border-color: #146c5d !important;
+  background: #edf6f2 !important;
+  color: #146c5d !important;
+  font-weight: 600;
+}
+.twos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.switch {
+  width: 44px !important;
+  height: 24px !important;
+}
+.panel {
+  background: #fff;
+  border: 1px solid #e5e8ee;
+  border-radius: 5px;
+}
+.section {
+  margin-top: 22px;
+}
+.heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 11px;
+}
+h2 {
+  font-size: 16px;
+  margin: 0;
+}
+.outline {
+  background: #fff;
+  border: 1px solid #146c5d;
+  border-radius: 5px;
+  padding: 7px 10px;
+  color: #146c5d;
+  font-size: 13px;
+}
+.row {
+  padding: 14px;
+  border-bottom: 1px solid #edf0f4;
+}
+.row:last-child {
+  border: 0;
+}
+.row b {
+  font-size: 15px;
+}
+.row p,
+.row small,
+.empty {
+  display: block;
+  color: #6b7685;
+  margin: 5px 0;
+  font-size: 13px;
+}
+.empty {
+  padding: 14px;
+}
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.summary article {
+  border: 1px solid #e5e8ee;
+  border-radius: 5px;
+  background: #fff;
+  text-align: center;
+  padding: 14px;
+}
+.summary b {
+  display: block;
+  color: #146c5d;
+  font-size: 23px;
+}
+.summary span {
+  font-size: 12px;
+  color: #6b7685;
+}
+nav {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid #e5e8ee;
+  margin: 0 -16px 18px;
+}
+nav button {
+  border: 0;
+  background: none;
+  padding: 12px 0;
+  color: #6b7685;
+}
+nav .active {
+  border-bottom: 3px solid #146c5d;
+  color: #146c5d;
+  font-weight: 700;
+}
+.account-actions {
+  position: fixed;
+  right: 12px;
+  top: 12px;
+  z-index: 2;
+  display: flex;
+  gap: 7px;
+}
+.logout,
+.account {
+  border: 1px solid #d6dce5;
+  background: #fff;
+  border-radius: 5px;
+  padding: 6px 9px;
+  color: #146c5d;
+}
+.account { font-size: 12px; }
+.password-form { padding: 16px; }
+.password-hint { color: #6b7685; font-size: 13px; line-height: 1.6; margin: 0 0 18px; }
+.password-form .password-hint:last-child { margin: 15px 0 0; }
+.days { display: flex; gap: 8px; overflow-x: auto; padding: 12px 0 16px; }
+.days button { flex: 0 0 56px; min-height: 58px; border: 1px solid #dce5e2; border-radius: 9px; background: #fff; color: #64717e; font-size: 12px; line-height: 1.65; }
+.days button.active { border-color: #146c5d; background: #146c5d; color: #fff; font-weight: 700; box-shadow: 0 4px 10px rgba(20,108,93,.18); }
+.selected-day { margin: 0 0 10px; color: #6b7685; font-size: 13px; }
+.selected-day strong { color: #146c5d; font-weight: 700; }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; border-radius: 10px; background: #e9efec; }
+.tabs button { min-height: 42px; border: 0; border-radius: 7px; background: transparent; color: #66736e; font-size: 14px; font-weight: 600; }
+.tabs button.active { background: #fff; color: #146c5d; box-shadow: 0 2px 7px rgba(24,33,47,.13); }
+.tabs + .days { margin-top: 6px; }
+.slots { display: grid; gap: 10px; }
+.slot { min-height: 96px; border-radius: 9px; overflow: hidden; }
+.slot > div { padding: 14px 14px 0; }
+.slot b { display: block; color: #18212f; margin-bottom: 5px; }
+.booked { display: block; margin: 13px 14px 14px; padding: 10px; border-radius: 6px; text-align: center; color: #146c5d; background: #e9f5f2; font-size: 13px; font-weight: 700; }
+.slot { display: block; }
+.book-action { width: calc(100% - 28px); min-height: 38px; margin: 13px 14px 14px; font-size: 14px; }
+.cancel-action { margin-top: 8px; }
+.rule-note { display: block; margin-top: 7px; color: #718078; font-size: 12px; }

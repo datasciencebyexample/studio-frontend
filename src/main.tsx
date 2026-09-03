@@ -1,0 +1,938 @@
+import { FormEvent, useEffect, useState } from "react";
+import { createRoot } from "react-dom/client";
+import { api, session } from "./api";
+import logo from "./assets/logo.png";
+import "./styles.css";
+const cards: any = {
+  times: "次卡",
+  month: "月卡",
+  quarter: "季卡",
+  year: "年卡",
+};
+const avatars = [
+  ["ballet", "🩰"],
+  ["ribbon", "🎀"],
+  ["music", "🎵"],
+  ["flower", "🌷"],
+  ["star", "⭐"],
+  ["wave", "🌊"],
+];
+const courses: any = {
+  daily: [
+    ["素质训练", 60],
+    ["指向性训练（肩背核心）", 60],
+    ["指向性训练（臀腿核心）", 60],
+    ["柔韧度训练和脚背", 60],
+    ["古典芭蕾基训", 90],
+  ],
+  custom: [
+    ["足尖", 60],
+    ["1对1", 60],
+    ["现代舞技术", 90],
+    ["古典芭蕾剧目", 90],
+    ["接触即兴", 90],
+  ],
+};
+const appointmentStatus: Record<string, string> = {
+  pending: "待确认",
+  confirmed: "已确认",
+  cancelled_by_student: "已取消",
+  cancelled_by_teacher: "老师已取消",
+  cancelled_by_system: "人数不足，课程已自动取消",
+  completed: "已完成",
+};
+function isPastCancellationCutoff(schedule: any) {
+  return Boolean(schedule?.cancellationCutoffAt && Date.now() >= Date.parse(schedule.cancellationCutoffAt));
+}
+function Login({ done }: any) {
+  const [u, su] = useState(""),
+    [p, sp] = useState(""),
+    [e, se] = useState("");
+  async function go(x: FormEvent) {
+    x.preventDefault();
+    try {
+      let r = await api("/v1/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ username: u, password: p }),
+      });
+      session.token = r.token;
+      done(r.user);
+    } catch (x) {
+      se((x as Error).message);
+    }
+  }
+  return (
+    <main className="login">
+      <section>
+        <img className="login-logo" src={logo} alt="本觉剧场 Awareness Theatre" />
+        <h1>舞蹈课程管理</h1>
+        <p>课程安排、预约与课卡管理</p>
+      </section>
+      <form onSubmit={go}>
+        <label>
+          用户名（手机号码）
+          <input placeholder="请输入手机号码" inputMode="tel" autoComplete="username" value={u} onChange={(x) => su(x.target.value)} required />
+        </label>
+        <label>
+          登录密码
+          <input
+            type="password"
+            placeholder="请输入密码"
+            autoComplete="current-password"
+            value={p}
+            onChange={(x) => sp(x.target.value)}
+            required
+          />
+        </label>
+        {e && <p className="error">{e}</p>}
+        <button>登录</button>
+      </form>
+    </main>
+  );
+}
+function StudentForm({ back, refresh }: any) {
+  let [f, setF] = useState<any>({
+    name: "",
+    username: "",
+    phone: "",
+    purchasedAt: "",
+    expiresAt: "",
+    cardType: "times",
+    remainingLessons: 8,
+    avatarKey: "ballet",
+    password: "",
+  });
+  let [credential, setCredential] = useState<any>(null);
+  let set = (k: string, v: any) => setF({ ...f, [k]: v });
+  async function go(e: FormEvent) {
+    e.preventDefault();
+    try {
+      let r = await api("/v1/students", {
+        method: "POST",
+        body: JSON.stringify({ ...f, password: f.password || undefined }),
+      });
+      refresh();
+      setCredential({
+        username: r.username,
+        password: f.password || r.temporaryPassword,
+      });
+    } catch (x) {
+      alert((x as Error).message);
+    }
+  }
+  if (credential)
+    return (
+      <Page title="学生已创建" back={back}>
+        <section className="credential panel">
+          <p>
+            请将以下登录信息发给学生。密码只能在这里查看一次；之后可由老师重置。
+          </p>
+          <label>用户名</label>
+          <input readOnly value={credential.username} />
+          <label>初始密码</label>
+          <input readOnly value={credential.password} />
+          <button
+            type="button"
+            onClick={() =>
+              navigator.clipboard.writeText(
+                `用户名：${credential.username}\n密码：${credential.password}`,
+              )
+            }
+          >
+            复制登录信息
+          </button>
+          <button type="button" className="outline" onClick={back}>
+            完成
+          </button>
+        </section>
+      </Page>
+    );
+  return (
+    <Page title="添加学生" back={back}>
+      <form className="form" onSubmit={go}>
+        <Field label="选择头像">
+          <div className="avatars">
+            {avatars.map(([k, i]) => (
+              <button
+                type="button"
+                className={f.avatarKey === k ? "selected" : ""}
+                onClick={() => set("avatarKey", k)}
+                key={k}
+              >
+                {i}
+              </button>
+            ))}
+          </div>
+        </Field>
+        <Field label="学生姓名">
+          <input
+            placeholder="请输入姓名"
+            value={f.name}
+            onChange={(x) => set("name", x.target.value)}
+            required
+          />
+        </Field>
+        <Field label="用户名（手机号码）">
+          <input
+            inputMode="numeric"
+            placeholder="请输入手机号码"
+            value={f.username}
+            onChange={(x) =>
+              setF({ ...f, username: x.target.value, phone: x.target.value })
+            }
+            required
+          />
+        </Field>
+        <Field label="购课日期">
+          <input
+            type="date"
+            value={f.purchasedAt}
+            onChange={(x) => set("purchasedAt", x.target.value)}
+            required
+          />
+        </Field>
+        <Field label="课卡类别">
+          <div className="choices">
+            {Object.entries(cards).map(([k, v]) => (
+              <button
+                type="button"
+                className={f.cardType === k ? "selected" : ""}
+                onClick={() => set("cardType", k)}
+                key={k}
+              >
+                {v as string}
+              </button>
+            ))}
+          </div>
+        </Field>
+        {f.cardType === "times" && (
+          <Field label="初始剩余课时">
+            <input
+              type="number"
+              min="0"
+              value={f.remainingLessons}
+              onChange={(x) => set("remainingLessons", +x.target.value)}
+              required
+            />
+          </Field>
+        )}
+        <Field label="课程有效期">
+          <input
+            type="date"
+            value={f.expiresAt}
+            onChange={(x) => set("expiresAt", x.target.value)}
+            required
+          />
+        </Field>
+        <Field label="初始密码（留空自动生成）">
+          <input
+            minLength={8}
+            placeholder="自动生成安全密码"
+            value={f.password}
+            onChange={(x) => set("password", x.target.value)}
+          />
+        </Field>
+        <button>创建并生成登录信息</button>
+      </form>
+    </Page>
+  );
+}
+function ScheduleForm({ back, refresh }: any) {
+  let [f, sf] = useState<any>({
+    classType: "daily",
+    courseName: "素质训练",
+    allowBooking: true,
+    date: "",
+    startTime: "",
+    duration: 60,
+    minStudents: 4,
+    capacity: 16,
+  }), [newCourseName, setNewCourseName] = useState("");
+  let set = (k: string, v: any) => sf({ ...f, [k]: v });
+  let list = courses[f.classType];
+  function type(t: string) {
+    sf({
+      ...f,
+      classType: t,
+      allowBooking: t === "daily",
+      courseName: courses[t][0][0],
+      duration: courses[t][0][1],
+    });
+    setNewCourseName("");
+  }
+  async function go(e: FormEvent) {
+    e.preventDefault();
+    const courseName = newCourseName.trim() || f.courseName.trim();
+    if (!courseName) {
+      alert("请选择或填写课程名称");
+      return;
+    }
+    try {
+      await api("/v1/schedules", { method: "POST", body: JSON.stringify({ ...f, courseName }) });
+      refresh();
+      back();
+    } catch (x) {
+      alert((x as Error).message);
+    }
+  }
+  return (
+    <Page title="发布可预约时间" back={back}>
+      <form className="form" onSubmit={go}>
+        <Field label="课程类型">
+          <div className="twos">
+            <button
+              type="button"
+              className={f.classType === "daily" ? "selected" : ""}
+              onClick={() => type("daily")}
+            >
+              成人日常课
+            </button>
+            <button
+              type="button"
+              className={f.classType === "custom" ? "selected" : ""}
+              onClick={() => type("custom")}
+            >
+              定制课
+            </button>
+          </div>
+        </Field>
+        {f.classType === "custom" && (
+          <Field label="开放学生预约">
+            <input
+              className="switch"
+              type="checkbox"
+              checked={f.allowBooking}
+              onChange={(x) => set("allowBooking", x.target.checked)}
+            />
+          </Field>
+        )}
+        <Field label="常用课程">
+          <select
+            value={f.courseName}
+            onChange={(x) => {
+              let c = list.find((z: any) => z[0] === x.target.value);
+              sf({
+                ...f,
+                courseName: x.target.value,
+                duration: c?.[1] || f.duration,
+              });
+              setNewCourseName("");
+            }}
+          >
+            {list.map((c: any) => (
+              <option key={c[0]} value={c[0]}>
+                {c[0]} · {c[1]} 分钟
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="添加新的课程名称（可选）">
+          <input
+            value={newCourseName}
+            maxLength={30}
+            placeholder="例如：舞台表现力训练"
+            onChange={(x) => {
+              const value = x.target.value;
+              setNewCourseName(value);
+            }}
+          />
+          <small className="field-note">填写后将使用该名称；下拉菜单仍可用于选择常用课程。</small>
+        </Field>
+        <Field label="日期">
+          <input
+            type="date"
+            value={f.date}
+            onChange={(x) => set("date", x.target.value)}
+            required
+          />
+        </Field>
+        <Field label="开始时间">
+          <input
+            type="time"
+            value={f.startTime}
+            onChange={(x) => set("startTime", x.target.value)}
+            required
+          />
+        </Field>
+        <Field label="时长（分钟）">
+          <input
+            type="number"
+            min="15"
+            max="360"
+            value={f.duration}
+            onChange={(x) => set("duration", +x.target.value)}
+            required
+          />
+        </Field>
+        {(f.classType === "daily" || f.allowBooking) && (
+          <>
+            <Field label="最少开课人数">
+              <input
+                type="number"
+                min="4"
+                max="16"
+                value={f.minStudents}
+                onChange={(x) => set("minStudents", +x.target.value)}
+              />
+            </Field>
+            <Field label="最多预约学生数（不超过 16 人）">
+              <input
+                type="number"
+                min="4"
+                max="16"
+                value={f.capacity}
+                onChange={(x) => set("capacity", +x.target.value)}
+              />
+            </Field>
+          </>
+        )}
+        <button>发布</button>
+      </form>
+    </Page>
+  );
+}
+function Field({ label, children }: any) {
+  return (
+    <div className="field">
+      <label>{label}</label>
+      {children}
+    </div>
+  );
+}
+function Page({ title, back, children }: any) {
+  return (
+    <main className="page">
+      <header>
+        <button onClick={back}>‹</button>
+        {title}
+      </header>
+      {children}
+    </main>
+  );
+}
+function PasswordForm({ back }: { back: () => void }) {
+  const [currentPassword, setCurrentPassword] = useState(""),
+    [newPassword, setNewPassword] = useState(""),
+    [confirmPassword, setConfirmPassword] = useState(""),
+    [error, setError] = useState("");
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setError("两次输入的新密码不一致");
+      return;
+    }
+    try {
+      await api("/v1/auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      alert("密码已修改，请牢记新密码。");
+      back();
+    } catch (requestError) {
+      setError((requestError as Error).message);
+    }
+  }
+  return (
+    <Page title="修改密码" back={back}>
+      <form className="form panel password-form" onSubmit={submit}>
+        <p className="password-hint">为保障账号安全，新密码至少 8 位。</p>
+        <Field label="当前密码"><input type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} required /></Field>
+        <Field label="新密码"><input type="password" minLength={8} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required /></Field>
+        <Field label="确认新密码"><input type="password" minLength={8} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required /></Field>
+        {error && <p className="error">{error}</p>}
+        <button>保存新密码</button>
+        <p className="password-hint">忘记密码的学生请联系所属老师重置；老师请联系管理员。</p>
+      </form>
+    </Page>
+  );
+}
+function Teacher() {
+  let [t, st] = useState("today"),
+    [screen, ss] = useState("home"),
+    [selectedDate, setSelectedDate] = useState(
+      new Date().toISOString().slice(0, 10),
+    ),
+    [data, sd] = useState<any>({
+      students: [],
+      schedules: [],
+      appointments: [],
+    });
+  let load = () =>
+    Promise.all([
+      api("/v1/students"),
+      api("/v1/schedules"),
+      api("/v1/appointments"),
+    ]).then(([students, schedules, appointments]) =>
+      sd({ students, schedules, appointments }),
+    );
+  useEffect(() => {
+    load();
+  }, []);
+  if (screen === "student")
+    return <StudentForm back={() => ss("home")} refresh={load} />;
+  if (screen === "schedule")
+    return <ScheduleForm back={() => ss("home")} refresh={load} />;
+  let { students, schedules, appointments } = data;
+  async function resetPassword(studentId: string) {
+    if (!confirm("重置后，学生需使用新的临时密码登录。确认继续？")) return;
+    try {
+      const result = await api(`/v1/students/${studentId}/reset-password`, {
+        method: "POST",
+      });
+      prompt(
+        "请复制并发送给学生（密码仅显示这一次）",
+        `用户名：${result.username}\n密码：${result.temporaryPassword}`,
+      );
+    } catch (error) {
+      alert((error as Error).message);
+    }
+  }
+  async function setAppointmentStatus(appointmentId: string, status: string) {
+    const label =
+      status === "confirmed"
+        ? "确认预约"
+        : status === "completed"
+          ? "确认已完成并扣除一次课时"
+          : "取消该预约并释放名额";
+    if (!confirm(`${label}？`)) return;
+    try {
+      await api(`/v1/appointments/${appointmentId}/status`, {
+        method: "POST",
+        body: JSON.stringify({ status }),
+      });
+      load();
+    } catch (error) {
+      alert((error as Error).message);
+    }
+  }
+  return (
+    <main className="page">
+      <header>老师工作台</header>
+      <nav>
+        {[
+          ["today", "今日"],
+          ["schedules", "排课"],
+          ["appointments", "预约"],
+          ["students", "学生"],
+        ].map(([k, v]) => (
+          <button
+            className={t === k ? "active" : ""}
+            onClick={() => st(k)}
+            key={k}
+          >
+            {v}
+          </button>
+        ))}
+      </nav>
+      {t === "today" && (
+        <>
+          <div className="summary">
+            {[
+              [students.length, "学生"],
+              [
+                schedules.filter(
+                  (s: any) => s.date === new Date().toISOString().slice(0, 10),
+                ).length,
+                "今日课程",
+              ],
+              [
+                appointments.filter((a: any) => a.status === "pending").length,
+                "待确认",
+              ],
+            ].map((x) => (
+              <article key={String(x[1])}>
+                <b>{x[0]}</b>
+                <span>{x[1]}</span>
+              </article>
+            ))}
+          </div>
+          <section className="section">
+            <h2>课程安排</h2>
+            <div className="days">
+              {Array.from({ length: 7 }, (_, offset) => {
+                const value = new Date();
+                value.setDate(value.getDate() + offset);
+                const date = value.toISOString().slice(0, 10);
+                return (
+                  <button
+                    key={date}
+                    className={selectedDate === date ? "active" : ""}
+                    onClick={() => setSelectedDate(date)}
+                  >
+                    周
+                    {["日", "一", "二", "三", "四", "五", "六"][value.getDay()]}
+                    <br />
+                    {date.slice(5).replace("-", "/")}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="selected-day">查看 <strong>{selectedDate} · 周{["日", "一", "二", "三", "四", "五", "六"][new Date(`${selectedDate}T00:00:00`).getDay()]}</strong> 的课程</div>
+            <div className="panel">
+              {schedules
+                .filter((schedule: any) => schedule.date === selectedDate)
+                .map((schedule: any) => (
+                  <article className="row" key={schedule.scheduleId}>
+                    <b>
+                      {schedule.startTime} · {schedule.courseName}
+                    </b>
+                    <p>
+                      {schedule.classType === "custom"
+                        ? "定制课"
+                        : "成人日常课"}{" "}
+                      · 已预约 {schedule.bookedCount}/{schedule.capacity} 人
+                    </p>
+                    {appointments
+                      .filter(
+                        (appointment: any) =>
+                          appointment.scheduleId === schedule.scheduleId,
+                      )
+                      .map((appointment: any) => (
+                        <small key={appointment.appointmentId}>
+                          {students.find(
+                            (student: any) =>
+                              student.studentId === appointment.studentId,
+                          )?.name || "学生"}{" "}
+                          ·{" "}
+                          {appointment.status === "confirmed"
+                            ? "已确认"
+                            : appointment.status === "pending"
+                              ? "待确认"
+                              : appointment.status}
+                        </small>
+                      ))}
+                  </article>
+                ))}
+              {!schedules.some(
+                (schedule: any) => schedule.date === selectedDate,
+              ) && <p className="empty">这一天没有课程安排。</p>}
+            </div>
+          </section>
+        </>
+      )}
+      {t === "schedules" && (
+        <List
+          title="已发布可预约时间"
+          add="发布课程"
+          click={() => ss("schedule")}
+          items={schedules}
+          render={(s: any) => (
+            <>
+              <b>{s.courseName}</b>
+              <p>
+                {s.date} {s.startTime} ·{" "}
+                {s.classType === "custom" ? "定制课" : "成人日常课"} ·{" "}
+                {s.duration} 分钟
+              </p>
+              <small>
+                {s.allowBooking
+                  ? `已预约 ${s.bookedCount}/${s.capacity} 人`
+                  : "仅展示"}
+              </small>
+            </>
+          )}
+        />
+      )}{" "}
+      {t === "students" && (
+        <List
+          title="学生课时"
+          add="添加学生"
+          click={() => ss("student")}
+          items={students}
+          render={(s: any) => (
+            <>
+              <b>{s.name}</b>
+              <p>
+                {cards[s.cardType]} ·{" "}
+                {s.cardType === "times"
+                  ? `剩余 ${s.remainingLessons} 课时 · `
+                  : ""}
+                有效期 {s.expiresAt}
+              </p>
+              <small>{s.username}</small>
+              <button
+                className="outline"
+                onClick={() => resetPassword(s.studentId)}
+              >
+                重置密码
+              </button>
+            </>
+          )}
+        />
+      )}{" "}
+      {t === "appointments" && (
+        <List
+          title="预约管理"
+          items={appointments}
+          render={(a: any) => (
+            <>
+              <b>{a.courseName}</b>
+              <p>
+                {a.date} {a.startTime} · {a.status}
+              </p>
+              {(a.status === "pending" || a.status === "booked") && (
+                <div className="actions">
+                  <button
+                    className="outline book-action"
+                    onClick={() =>
+                      setAppointmentStatus(a.appointmentId, "confirmed")
+                    }
+                  >
+                    确认
+                  </button>
+                  <button
+                    className="outline danger"
+                    onClick={() =>
+                      setAppointmentStatus(
+                        a.appointmentId,
+                        "cancelled_by_teacher",
+                      )
+                    }
+                  >
+                    取消
+                  </button>
+                </div>
+              )}
+              {a.status === "confirmed" && (
+                <div className="actions">
+                  <button
+                    className="outline"
+                    onClick={() =>
+                      setAppointmentStatus(a.appointmentId, "completed")
+                    }
+                  >
+                    完成并扣课时
+                  </button>
+                  <button
+                    className="outline danger"
+                    onClick={() =>
+                      setAppointmentStatus(
+                        a.appointmentId,
+                        "cancelled_by_teacher",
+                      )
+                    }
+                  >
+                    取消
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        />
+      )}
+    </main>
+  );
+}
+function List({ title, add, click, items, render }: any) {
+  return (
+    <section className="section">
+      <div className="heading">
+        <h2>{title}</h2>
+        {add && (
+          <button className="outline" onClick={click}>
+            {add}
+          </button>
+        )}
+      </div>
+      <div className="panel">
+        {items.length ? (
+          items.map((x: any) => (
+            <article
+              className="row"
+              key={x.studentId || x.scheduleId || x.appointmentId}
+            >
+              {render(x)}
+            </article>
+          ))
+        ) : (
+          <p className="empty">暂无记录。</p>
+        )}
+      </div>
+    </section>
+  );
+}
+function Student() {
+  let [p, sp] = useState<any>(),
+    [s, ss] = useState<any[]>([]),
+    [appointments, setAppointments] = useState<any[]>([]),
+    [kind, sk] = useState("daily"),
+    [day, sd] = useState(new Date().toISOString().slice(0, 10));
+  useEffect(() => {
+    Promise.all([
+      api("/v1/students/me"),
+      api("/v1/schedules"),
+      api("/v1/appointments"),
+    ]).then(([p, s, appointments]) => {
+      sp(p);
+      ss(s);
+      setAppointments(appointments);
+    });
+  }, []);
+  if (!p) return <main className="page">正在加载你的课程...</main>;
+  let days = Array.from({ length: 7 }, (_, i) => {
+      let d = new Date();
+      d.setDate(d.getDate() + i);
+      return d.toISOString().slice(0, 10);
+    }),
+    visible = s.filter(
+      (x) =>
+        x.status === "open" &&
+        x.classType === kind &&
+        (kind === "custom" || x.date === day),
+    );
+  return (
+    <main className="page">
+      <header>我的课程</header>
+      <section className="panel profile">
+        <div>🩰</div>
+        <b>{p.name}</b>
+        <p>
+          {cards[p.cardType]} · 有效期至 {p.expiresAt}
+        </p>
+        {p.cardType === "times" && (
+          <strong>剩余 {p.remainingLessons} 课时</strong>
+        )}
+      </section>
+      <section className="section">
+        <div className="tabs">
+          <button
+            className={kind === "daily" ? "active" : ""}
+            onClick={() => sk("daily")}
+          >
+            成人日常课
+          </button>
+          <button
+            className={kind === "custom" ? "active" : ""}
+            onClick={() => sk("custom")}
+          >
+            定制课
+          </button>
+        </div>
+        {kind === "daily" && (
+          <div className="days">
+            {days.map((d) => (
+              <button
+                className={day === d ? "active" : ""}
+                onClick={() => sd(d)}
+                key={d}
+              >
+                周
+                {
+                  ["日", "一", "二", "三", "四", "五", "六"][
+                    new Date(d + "T00:00:00").getDay()
+                  ]
+                }
+                <br />
+                {d.slice(5).replace("-", "/")}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="slots">
+          {visible.map((x) => {
+            const isBooked = appointments.some(
+              (appointment) =>
+                appointment.scheduleId === x.scheduleId &&
+                ["pending", "confirmed"].includes(appointment.status),
+            );
+            const pastCutoff = isPastCancellationCutoff(x);
+            return (
+              <article className="panel slot" key={x.scheduleId}>
+                <div>
+                  <b>{x.courseName}</b>
+                  <p>
+                    {x.date} {x.startTime}
+                  </p>
+                  <small>
+                    {x.duration} 分钟 · 剩余 {x.capacity - x.bookedCount} 人
+                  </small>
+                  <small className="rule-note">
+                    {pastCutoff ? "已过预约截止时间" : "开课前 2 小时可免费取消"}
+                  </small>
+                </div>
+                {isBooked ? (
+                  <span className="booked">✓ 已预约</span>
+                ) : (
+                  <button
+                    className="outline book-action"
+                    disabled={!x.allowBooking || x.bookedCount >= x.capacity || pastCutoff}
+                    onClick={async () => {
+                      if (confirm("确认预约这个时间段？")) {
+                        try {
+                          await api(`/v1/schedules/${x.scheduleId}/book`, {
+                            method: "POST",
+                          });
+                          location.reload();
+                        } catch (e) {
+                          alert((e as Error).message);
+                        }
+                      }
+                    }}
+                  >
+                    预约
+                  </button>
+                )}
+              </article>
+            );
+          })}
+          {!visible.length && <p className="empty">暂无可预约课程。</p>}
+        </div>
+      </section>
+      <section className="section">
+        <h2>我的预约</h2>
+        <div className="panel">
+          {appointments.length ? (
+            appointments.map((appointment) => (
+              <article className="row" key={appointment.appointmentId}>
+                <b>
+                  {appointment.date} {appointment.startTime} ·{" "}
+                  {appointment.courseName}
+                </b>
+                <p>状态：{appointmentStatus[appointment.status] || appointment.status}</p>
+                {["pending", "confirmed"].includes(appointment.status) && (() => {
+                  const schedule = s.find((course) => course.scheduleId === appointment.scheduleId);
+                  const pastCutoff = isPastCancellationCutoff(schedule);
+                  return pastCutoff ? <small className="rule-note">已过开课前 2 小时取消截止时间</small> : <button className="outline danger cancel-action" onClick={async () => { if (!confirm("取消后会释放一个预约名额。")) return; try { await api(`/v1/appointments/${appointment.appointmentId}/cancel`, { method: "POST" }); location.reload(); } catch (error) { alert((error as Error).message); } }}>取消预约</button>;
+                })()}
+              </article>
+            ))
+          ) : (
+            <p className="empty">还没有预约记录。</p>
+          )}
+        </div>
+      </section>
+    </main>
+  );
+}
+function App() {
+  let [u, su] = useState<any>(), [screen, setScreen] = useState("home");
+  useEffect(() => {
+    if (session.token)
+      api("/v1/auth/me")
+        .then(su)
+        .catch(() => session.clear());
+  }, []);
+  useEffect(() => {
+    if (u?.mustChangePassword) setScreen("password");
+  }, [u]);
+  return (
+    <>
+      {u && screen === "home" && (
+        <div className="account-actions">
+          <button className="account" onClick={() => setScreen("password")}>修改密码</button>
+          <button className="logout" onClick={() => { session.clear(); su(null); }}>退出</button>
+        </div>
+      )}
+      {!u ? (
+        <Login done={su} />
+      ) : screen === "password" ? (
+        <PasswordForm back={() => setScreen("home")} />
+      ) : u.role === "teacher" ? (
+        <Teacher />
+      ) : (
+        <Student />
+      )}
+    </>
+  );
+}
+createRoot(document.getElementById("root")!).render(<App />);
