@@ -319,6 +319,7 @@ nav .active {
 .appointment-tabs small { display: inline-block; min-width: 17px; margin-left: 3px; color: inherit; font-size: 11px; }
 .appointment-date-group { margin-top: 18px; }
 .appointment-date-group h3 { margin: 0 0 8px; color: #53615c; font-size: 14px; }
+.appointment-row .appointment-student { color: #146c5d; font-weight: 600; }
 .appointment-date-group .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 11px; }
 .appointment-date-group .actions .outline { min-height: 35px; }
 .history-more { display: block; width: 100%; margin-top: 14px; border: 0; background: transparent; color: #146c5d; font-size: 14px; }

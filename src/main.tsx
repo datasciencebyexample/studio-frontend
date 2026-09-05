@@ -698,6 +698,7 @@ function Teacher() {
         <AppointmentManager
           appointments={appointments}
           schedules={schedules}
+          students={students}
           setStatus={setAppointmentStatus}
         />
       )}
@@ -728,7 +729,7 @@ function StudentDetail({ student, appointments, back }: any) {
     </Page>
   );
 }
-function AppointmentManager({ appointments, schedules, setStatus }: any) {
+function AppointmentManager({ appointments, schedules, students, setStatus }: any) {
   const [tab, setTab] = useState("pending");
   const [showAllHistory, setShowAllHistory] = useState(false);
   const today = shanghaiToday();
@@ -762,8 +763,12 @@ function AppointmentManager({ appointments, schedules, setStatus }: any) {
           <h3>{date === today ? "今天" : `${date} · 周${weekday(date)}`}</h3>
           <div className="panel">
             {items.map((a: any) => (
-              <article className="row" key={a.appointmentId}>
+              <article className="row appointment-row" key={a.appointmentId}>
                 <b>{a.startTime} · {a.courseName}</b>
+                {(() => {
+                  const student = students.find((item: any) => item.studentId === a.studentId);
+                  return <small className="appointment-student">{student ? `${student.name} · ${student.phone || student.username}` : "学生资料已删除"}</small>;
+                })()}
                 <p>{appointmentStatus[a.status] || a.status}</p>
                 {(a.status === "pending" || a.status === "booked") && <div className="actions"><button className="outline" onClick={() => setStatus(a.appointmentId, "confirmed")}>确认预约</button><button className="outline danger" onClick={() => setStatus(a.appointmentId, "cancelled_by_teacher")}>取消</button></div>}
                 {a.status === "confirmed" && <div className="actions"><button className="outline" onClick={() => setStatus(a.appointmentId, "completed")}>完成并扣课时</button><button className="outline danger" onClick={() => setStatus(a.appointmentId, "cancelled_by_teacher")}>取消</button></div>}
