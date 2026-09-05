@@ -464,6 +464,7 @@ function Teacher() {
   let [t, st] = useState("today"),
     [screen, ss] = useState("home"),
     [editing, setEditing] = useState<any>(null),
+    [selectedStudent, setSelectedStudent] = useState<any>(null),
     [selectedDate, setSelectedDate] = useState(shanghaiToday()),
     [data, sd] = useState<any>({
       students: [],
@@ -485,6 +486,8 @@ function Teacher() {
     return <StudentForm back={() => ss("home")} refresh={load} />;
   if (screen === "schedule")
     return <ScheduleForm back={() => ss("home")} refresh={load} schedule={editing} />;
+  if (screen === "student-detail")
+    return <StudentDetail student={selectedStudent} appointments={data.appointments} back={() => ss("home")} />;
   let { students, schedules, appointments } = data;
   async function resetPassword(studentId: string) {
     if (!confirm("重置后，学生需使用新的临时密码登录。确认继续？")) return;
@@ -683,12 +686,10 @@ function Teacher() {
                 有效期 {s.expiresAt}
               </p>
               <small>{s.username}</small>
-              <button
-                className="outline"
-                onClick={() => resetPassword(s.studentId)}
-              >
-                重置密码
-              </button>
+              <div className="student-actions">
+                <button className="outline" onClick={() => { setSelectedStudent(s); ss("student-detail"); }}>详情</button>
+                <button className="outline" onClick={() => resetPassword(s.studentId)}>重置密码</button>
+              </div>
             </>
           )}
         />
@@ -701,6 +702,30 @@ function Teacher() {
         />
       )}
     </main>
+  );
+}
+function StudentDetail({ student, appointments, back }: any) {
+  const records = appointments.filter((item: any) => item.studentId === student.studentId);
+  const active = records.filter((item: any) => ["pending", "booked", "confirmed"].includes(item.status)).sort((a: any, b: any) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`));
+  const completed = records.filter((item: any) => item.status === "completed").sort((a: any, b: any) => `${b.date} ${b.startTime}`.localeCompare(`${a.date} ${a.startTime}`));
+  const otherHistory = records.filter((item: any) => !["pending", "booked", "confirmed", "completed"].includes(item.status)).sort((a: any, b: any) => `${b.date} ${b.startTime}`.localeCompare(`${a.date} ${a.startTime}`));
+  const RecordList = ({ items, lesson }: any) => items.length ? <div className="panel">{items.map((item: any) => <article className="row" key={item.appointmentId}><b>{item.date} {item.startTime} · {item.courseName}</b><small>{lesson ? (student.cardType === "times" ? "已完成 · 扣除 1 课时" : "已完成") : appointmentStatus[item.status] || item.status}</small></article>)}</div> : <p className="empty">暂无记录。</p>;
+  return (
+    <Page title="学生详情" back={back}>
+      <section className="student-profile panel">
+        <h2>{student.name}</h2>
+        <p>{student.username || student.phone}</p>
+        <div className="student-stats">
+          <span><b>{student.cardType === "times" ? student.remainingLessons : "—"}</b>剩余课时</span>
+          <span><b>{completed.length}</b>累计完成</span>
+          <span><b>{records.length}</b>累计预约</span>
+        </div>
+        <small>{cards[student.cardType]} · 课程开卡时间 {student.purchasedAt} · 有效期至 {student.expiresAt}</small>
+      </section>
+      <section className="section"><div className="heading"><h2>待处理与即将上课</h2><span>{active.length}</span></div><RecordList items={active} /></section>
+      <section className="section"><div className="heading"><h2>课时记录</h2><span>{completed.length}</span></div><RecordList items={completed} lesson /></section>
+      <section className="section"><div className="heading"><h2>取消记录</h2><span>{otherHistory.length}</span></div><RecordList items={otherHistory} /></section>
+    </Page>
   );
 }
 function AppointmentManager({ appointments, schedules, setStatus }: any) {
