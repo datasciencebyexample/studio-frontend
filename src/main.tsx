@@ -41,6 +41,19 @@ const appointmentStatus: Record<string, string> = {
   cancelled_by_system: "人数不足，课程已自动取消",
   completed: "已完成",
 };
+const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
+function shanghaiToday() {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+  const part = (type: string) => parts.find((item) => item.type === type)?.value || "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+function addDays(date: string, offset: number) {
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day + offset)).toISOString().slice(0, 10);
+}
+function weekday(date: string) {
+  return weekdays[new Date(`${date}T12:00:00Z`).getUTCDay()];
+}
 function isPastCancellationCutoff(schedule: any) {
   return Boolean(schedule?.cancellationCutoffAt && Date.now() >= Date.parse(schedule.cancellationCutoffAt));
 }
@@ -183,7 +196,7 @@ function StudentForm({ back, refresh }: any) {
             required
           />
         </Field>
-        <Field label="购课日期">
+        <Field label="课程开卡时间">
           <input
             type="date"
             value={f.purchasedAt}
@@ -246,7 +259,7 @@ function ScheduleForm({ back, refresh }: any) {
     startTime: "",
     duration: 60,
     minStudents: 4,
-    capacity: 16,
+    capacity: 18,
   }), [newCourseName, setNewCourseName] = useState("");
   let set = (k: string, v: any) => sf({ ...f, [k]: v });
   let list = courses[f.classType];
@@ -370,16 +383,16 @@ function ScheduleForm({ back, refresh }: any) {
               <input
                 type="number"
                 min="4"
-                max="16"
+                max="18"
                 value={f.minStudents}
                 onChange={(x) => set("minStudents", +x.target.value)}
               />
             </Field>
-            <Field label="最多预约学生数（不超过 16 人）">
+            <Field label="最多预约学生数（不超过 18 人）">
               <input
                 type="number"
                 min="4"
-                max="16"
+                max="18"
                 value={f.capacity}
                 onChange={(x) => set("capacity", +x.target.value)}
               />
@@ -449,9 +462,7 @@ function PasswordForm({ back }: { back: () => void }) {
 function Teacher() {
   let [t, st] = useState("today"),
     [screen, ss] = useState("home"),
-    [selectedDate, setSelectedDate] = useState(
-      new Date().toISOString().slice(0, 10),
-    ),
+    [selectedDate, setSelectedDate] = useState(shanghaiToday()),
     [data, sd] = useState<any>({
       students: [],
       schedules: [],
@@ -531,7 +542,7 @@ function Teacher() {
               [students.length, "学生"],
               [
                 schedules.filter(
-                  (s: any) => s.date === new Date().toISOString().slice(0, 10),
+                  (s: any) => s.date === shanghaiToday(),
                 ).length,
                 "今日课程",
               ],
@@ -550,9 +561,7 @@ function Teacher() {
             <h2>课程安排</h2>
             <div className="days">
               {Array.from({ length: 7 }, (_, offset) => {
-                const value = new Date();
-                value.setDate(value.getDate() + offset);
-                const date = value.toISOString().slice(0, 10);
+                const date = addDays(shanghaiToday(), offset);
                 return (
                   <button
                     key={date}
@@ -560,14 +569,14 @@ function Teacher() {
                     onClick={() => setSelectedDate(date)}
                   >
                     周
-                    {["日", "一", "二", "三", "四", "五", "六"][value.getDay()]}
+                    {weekday(date)}
                     <br />
                     {date.slice(5).replace("-", "/")}
                   </button>
                 );
               })}
             </div>
-            <div className="selected-day">查看 <strong>{selectedDate} · 周{["日", "一", "二", "三", "四", "五", "六"][new Date(`${selectedDate}T00:00:00`).getDay()]}</strong> 的课程</div>
+            <div className="selected-day">查看 <strong>{selectedDate} · 周{weekday(selectedDate)}</strong> 的课程</div>
             <div className="panel">
               {schedules
                 .filter((schedule: any) => schedule.date === selectedDate)
@@ -756,7 +765,7 @@ function Student() {
     [s, ss] = useState<any[]>([]),
     [appointments, setAppointments] = useState<any[]>([]),
     [kind, sk] = useState("daily"),
-    [day, sd] = useState(new Date().toISOString().slice(0, 10));
+    [day, sd] = useState(shanghaiToday());
   useEffect(() => {
     Promise.all([
       api("/v1/students/me"),
@@ -769,11 +778,7 @@ function Student() {
     });
   }, []);
   if (!p) return <main className="page">正在加载你的课程...</main>;
-  let days = Array.from({ length: 7 }, (_, i) => {
-      let d = new Date();
-      d.setDate(d.getDate() + i);
-      return d.toISOString().slice(0, 10);
-    }),
+  let days = Array.from({ length: 7 }, (_, i) => addDays(shanghaiToday(), i)),
     visible = s.filter(
       (x) =>
         x.status === "open" &&
@@ -817,11 +822,7 @@ function Student() {
                 key={d}
               >
                 周
-                {
-                  ["日", "一", "二", "三", "四", "五", "六"][
-                    new Date(d + "T00:00:00").getDay()
-                  ]
-                }
+                {weekday(d)}
                 <br />
                 {d.slice(5).replace("-", "/")}
               </button>
