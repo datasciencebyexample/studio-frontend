@@ -34,7 +34,8 @@ const courses: any = {
   ],
 };
 const appointmentStatus: Record<string, string> = {
-  pending: "待确认",
+  pending: "预约成功，待老师确认",
+  booked: "预约成功，待老师确认",
   confirmed: "已确认",
   cancelled_by_student: "已取消",
   cancelled_by_teacher: "老师已取消",
@@ -927,11 +928,12 @@ function Student() {
         )}
         <div className="slots">
           {visible.map((x) => {
-            const isBooked = appointments.some(
+            const activeAppointment = appointments.find(
               (appointment) =>
                 appointment.scheduleId === x.scheduleId &&
                 ["pending", "confirmed"].includes(appointment.status),
             );
+            const isBooked = Boolean(activeAppointment);
             const pastCutoff = isPastCancellationCutoff(x);
             return (
               <article className="panel slot" key={x.scheduleId}>
@@ -948,7 +950,9 @@ function Student() {
                   </small>
                 </div>
                 {isBooked ? (
-                  <span className="booked">✓ 已预约</span>
+                  <span className="booked">
+                    ✓ {activeAppointment.status === "confirmed" ? "预约已确认" : "预约成功，待老师确认"}
+                  </span>
                 ) : (
                   <button
                     className="outline book-action"
