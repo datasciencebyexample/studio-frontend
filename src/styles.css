@@ -190,6 +190,7 @@ h2 {
 .row:last-child {
   border: 0;
 }
+.row > .outline { margin-top: 10px; }
 .row b {
   font-size: 15px;
 }

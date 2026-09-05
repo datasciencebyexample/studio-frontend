@@ -250,7 +250,7 @@ function StudentForm({ back, refresh }: any) {
     </Page>
   );
 }
-function ScheduleForm({ back, refresh }: any) {
+function ScheduleForm({ back, refresh, schedule }: any) {
   let [f, sf] = useState<any>({
     classType: "daily",
     courseName: "素质训练",
@@ -260,7 +260,8 @@ function ScheduleForm({ back, refresh }: any) {
     duration: 60,
     minStudents: 4,
     capacity: 18,
-  }), [newCourseName, setNewCourseName] = useState("");
+    ...(schedule || {}),
+  }), [newCourseName, setNewCourseName] = useState(schedule && !courses[schedule.classType]?.some((course: any) => course[0] === schedule.courseName) ? schedule.courseName : "");
   let set = (k: string, v: any) => sf({ ...f, [k]: v });
   let list = courses[f.classType];
   function type(t: string) {
@@ -281,7 +282,7 @@ function ScheduleForm({ back, refresh }: any) {
       return;
     }
     try {
-      await api("/v1/schedules", { method: "POST", body: JSON.stringify({ ...f, courseName }) });
+      await api(schedule ? `/v1/schedules/${schedule.scheduleId}` : "/v1/schedules", { method: schedule ? "PUT" : "POST", body: JSON.stringify({ ...f, courseName }) });
       refresh();
       back();
     } catch (x) {
@@ -289,7 +290,7 @@ function ScheduleForm({ back, refresh }: any) {
     }
   }
   return (
-    <Page title="发布可预约时间" back={back}>
+    <Page title={schedule ? "编辑已发布课程" : "发布可预约时间"} back={back}>
       <form className="form" onSubmit={go}>
         <Field label="课程类型">
           <div className="twos">
@@ -399,7 +400,7 @@ function ScheduleForm({ back, refresh }: any) {
             </Field>
           </>
         )}
-        <button>发布</button>
+        <button>{schedule ? "保存修改" : "发布"}</button>
       </form>
     </Page>
   );
@@ -462,6 +463,7 @@ function PasswordForm({ back }: { back: () => void }) {
 function Teacher() {
   let [t, st] = useState("today"),
     [screen, ss] = useState("home"),
+    [editing, setEditing] = useState<any>(null),
     [selectedDate, setSelectedDate] = useState(shanghaiToday()),
     [data, sd] = useState<any>({
       students: [],
@@ -482,7 +484,7 @@ function Teacher() {
   if (screen === "student")
     return <StudentForm back={() => ss("home")} refresh={load} />;
   if (screen === "schedule")
-    return <ScheduleForm back={() => ss("home")} refresh={load} />;
+    return <ScheduleForm back={() => ss("home")} refresh={load} schedule={editing} />;
   let { students, schedules, appointments } = data;
   async function resetPassword(studentId: string) {
     if (!confirm("重置后，学生需使用新的临时密码登录。确认继续？")) return;
@@ -623,7 +625,7 @@ function Teacher() {
         <List
           title="已发布可预约时间"
           add="发布课程"
-          click={() => ss("schedule")}
+          click={() => { setEditing(null); ss("schedule"); }}
           items={schedules}
           render={(s: any) => (
             <>
@@ -638,6 +640,7 @@ function Teacher() {
                   ? `已预约 ${s.bookedCount}/${s.capacity} 人`
                   : "仅展示"}
               </small>
+              {s.status === "open" && <button className="outline" onClick={() => { setEditing(s); ss("schedule"); }}>编辑课程</button>}
             </>
           )}
         />
