@@ -600,12 +600,18 @@ function Teacher() {
                         </button>
                       )}
                     </div>
-                    <p>
-                      {schedule.classType === "custom"
-                        ? "定制课"
-                        : "成人日常课"}{" "}
-                      · 已预约 {schedule.bookedCount}/{schedule.capacity} 人
-                    </p>
+                    {schedule.status === "cancelled_by_system" ? (
+                      <p className="course-cancelled">
+                        人数不足，课程已自动取消
+                      </p>
+                    ) : (
+                      <p>
+                        {schedule.classType === "custom"
+                          ? "定制课"
+                          : "成人日常课"}{" "}
+                        · 已预约 {schedule.bookedCount}/{schedule.capacity} 人
+                      </p>
+                    )}
                     {appointments
                       .filter(
                         (appointment: any) =>

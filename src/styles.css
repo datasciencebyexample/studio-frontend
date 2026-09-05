@@ -214,6 +214,10 @@ h2 {
   margin: 5px 0;
   font-size: 13px;
 }
+.row p.course-cancelled {
+  color: #b34545;
+  font-weight: 600;
+}
 .empty {
   padding: 14px;
 }
