@@ -232,6 +232,8 @@ h2 {
 .account-alert > span { display: grid; flex: 0 0 auto; width: 23px; height: 23px; place-items: center; border-radius: 50%; background: #dc9836; color: #fff; font-weight: 800; }
 .account-alert b { font-size: 14px; }
 .account-alert p { margin: 4px 0 0; font-size: 13px; line-height: 1.55; }
+.account-alert.reminder { border-color: #c9dfd4; background: #edf8f3; color: #28664f; }
+.account-alert.reminder > span { background: #3b9a74; }
 .empty {
   padding: 14px;
 }

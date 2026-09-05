@@ -858,6 +858,9 @@ function Student() {
   const cardExpired = p.expiresAt < shanghaiToday();
   const lessonsExhausted = p.cardType === "times" && Number(p.remainingLessons) <= 0;
   const accountUnavailable = cardExpired || lessonsExhausted;
+  const expiryDays = Math.floor((Date.parse(`${p.expiresAt}T00:00:00Z`) - Date.parse(`${shanghaiToday()}T00:00:00Z`)) / 86_400_000);
+  const cardExpiringSoon = !cardExpired && expiryDays <= 30;
+  const lessonsLow = p.cardType === "times" && Number(p.remainingLessons) > 0 && Number(p.remainingLessons) < 2;
   const accountMessage = cardExpired && lessonsExhausted
     ? "你的课程卡已过期，且次卡课时已用完。请联系老师续卡或补充课时后再预约。"
     : cardExpired
@@ -880,6 +883,15 @@ function Student() {
         <section className="account-alert" role="alert">
           <span>!</span>
           <div><b>暂时无法预约新课程</b><p>{accountMessage}</p></div>
+        </section>
+      )}
+      {!accountUnavailable && (cardExpiringSoon || lessonsLow) && (
+        <section className="account-alert reminder" role="status">
+          <span>!</span>
+          <div>
+            <b>课程卡温馨提醒</b>
+            <p>{cardExpiringSoon && lessonsLow ? `课程卡将在 ${expiryDays} 天后到期，目前仅剩 ${p.remainingLessons} 课时。建议提前联系老师续卡或补充课时。` : cardExpiringSoon ? `课程卡将在 ${expiryDays} 天后到期，建议提前联系老师续卡。` : `目前仅剩 ${p.remainingLessons} 课时，建议提前联系老师补充课时。`}</p>
+          </div>
         </section>
       )}
       <section className="section">
