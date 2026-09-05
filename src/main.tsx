@@ -654,10 +654,12 @@ function Teacher() {
                 {s.classType === "custom" ? "定制课" : "成人日常课"} ·{" "}
                 {s.duration} 分钟
               </p>
-              <small>
-                {s.allowBooking
-                  ? `已预约 ${s.bookedCount}/${s.capacity} 人`
-                  : "仅展示"}
+              <small className={s.status === "cancelled_by_system" ? "course-cancelled" : ""}>
+                {s.status === "cancelled_by_system"
+                  ? "人数不足，课程已自动取消"
+                  : s.allowBooking
+                    ? `已预约 ${s.bookedCount}/${s.capacity} 人`
+                    : "仅展示"}
               </small>
               {s.status === "open" && <button className="outline" onClick={() => { setEditing(s); ss("schedule"); }}>编辑课程</button>}
             </>
