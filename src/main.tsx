@@ -527,6 +527,15 @@ function Teacher() {
       alert((error as Error).message);
     }
   }
+  async function cancelCourse(schedule: any) {
+    if (!confirm(`确认取消「${schedule.courseName}」吗？所有已预约学生将收到课程取消状态，名额会被释放。`)) return;
+    try {
+      await api(`/v1/schedules/${schedule.scheduleId}/cancel`, { method: "POST" });
+      load();
+    } catch (error) {
+      alert((error as Error).message);
+    }
+  }
   return (
     <main className="page">
       <header>老师工作台</header>
@@ -598,20 +607,15 @@ function Teacher() {
                         {schedule.startTime} · {schedule.courseName}
                       </b>
                       {schedule.status === "open" && (
-                        <button
-                          className="outline compact-edit"
-                          onClick={() => {
-                            setEditing(schedule);
-                            ss("schedule");
-                          }}
-                        >
-                          编辑
-                        </button>
+                        <div className="course-row-actions">
+                          <button className="outline compact-edit" onClick={() => { setEditing(schedule); ss("schedule"); }}>编辑</button>
+                          <button className="outline danger compact-edit" onClick={() => cancelCourse(schedule)}>取消</button>
+                        </div>
                       )}
                     </div>
-                    {schedule.status === "cancelled_by_system" ? (
+                    {["cancelled_by_system", "cancelled_by_teacher"].includes(schedule.status) ? (
                       <p className="course-cancelled">
-                        人数不足，课程已自动取消
+                        {schedule.status === "cancelled_by_system" ? "人数不足，课程已自动取消" : "课程已由老师取消"}
                       </p>
                     ) : (
                       <p>
@@ -663,14 +667,16 @@ function Teacher() {
                 {s.classType === "custom" ? "定制课" : "成人日常课"} ·{" "}
                 {s.duration} 分钟
               </p>
-              <small className={s.status === "cancelled_by_system" ? "course-cancelled" : ""}>
+              <small className={["cancelled_by_system", "cancelled_by_teacher"].includes(s.status) ? "course-cancelled" : ""}>
                 {s.status === "cancelled_by_system"
                   ? "人数不足，课程已自动取消"
+                  : s.status === "cancelled_by_teacher"
+                    ? "课程已由老师取消"
                   : s.allowBooking
                     ? `已预约 ${s.bookedCount}/${s.capacity} 人`
                     : "仅展示"}
               </small>
-              {s.status === "open" && <button className="outline" onClick={() => { setEditing(s); ss("schedule"); }}>编辑课程</button>}
+              {s.status === "open" && <div className="course-list-actions"><button className="outline" onClick={() => { setEditing(s); ss("schedule"); }}>编辑课程</button><button className="outline danger" onClick={() => cancelCourse(s)}>取消课程</button></div>}
             </>
           )}
         />

@@ -196,6 +196,7 @@ h2 {
   justify-content: space-between;
   gap: 10px;
 }
+.course-row-actions, .course-list-actions { display: flex; gap: 7px; }
 .course-row-title b { min-width: 0; }
 .compact-edit {
   flex: 0 0 auto;
@@ -203,6 +204,9 @@ h2 {
   padding: 4px 10px;
 }
 .row > .outline { margin-top: 10px; }
+.course-list-actions { margin-top: 10px; }
+.course-list-actions .outline { margin-top: 0; }
+.outline.danger { border-color: #c85a5a; color: #b34545; }
 .row b {
   font-size: 15px;
 }
