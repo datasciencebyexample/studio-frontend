@@ -289,6 +289,19 @@ nav .active {
 .password-form { padding: 16px; }
 .password-hint { color: #6b7685; font-size: 13px; line-height: 1.6; margin: 0 0 18px; }
 .password-form .password-hint:last-child { margin: 15px 0 0; }
+.credential { padding: 20px; overflow: hidden; }
+.credential-success { display: flex; align-items: center; gap: 12px; }
+.credential-success > span { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 50%; background: #dff2e9; color: #146c5d; font-size: 22px; font-weight: 700; }
+.credential-success h2 { margin: 0; color: #18212f; font-size: 19px; }
+.credential-success p { margin: 3px 0 0; color: #718078; font-size: 13px; }
+.credential-warning { margin: 18px 0; padding: 11px 12px; border-radius: 8px; background: #fff7e5; color: #8b641d; font-size: 13px; line-height: 1.55; }
+.credential-values { display: grid; gap: 9px; }
+.credential-values > div { padding: 13px 14px; border: 1px solid #dce8e3; border-radius: 9px; background: #f7fbf9; }
+.credential-values small, .credential-values strong { display: block; }
+.credential-values small { margin-bottom: 5px; color: #718078; font-size: 12px; }
+.credential-values strong { color: #183a32; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 16px; letter-spacing: .03em; word-break: break-all; }
+.credential > button { width: 100%; margin-top: 14px; }
+.credential > button.outline { margin-top: 9px; }
 .days { display: flex; gap: 8px; overflow-x: auto; padding: 12px 0 16px; }
 .days button { flex: 0 0 56px; min-height: 58px; border: 1px solid #dce5e2; border-radius: 9px; background: #fff; color: #64717e; font-size: 12px; line-height: 1.65; }
 .days button.active { border-color: #146c5d; background: #146c5d; color: #fff; font-weight: 700; box-shadow: 0 4px 10px rgba(20,108,93,.18); }
@@ -357,6 +370,10 @@ nav .active {
   .compact-edit { min-height: 36px; padding: 5px 11px; }
   .summary { gap: 10px; }
   .student-profile { padding: 20px 17px; border-radius: 17px; }
+  .credential { padding: 23px 17px; border-radius: 17px; }
+  .credential-success h2 { font-size: 21px; }
+  .credential-warning { padding: 12px; font-size: 14px; }
+  .credential-values > div { padding: 15px; }
   .student-stats span { padding: 12px 5px; font-size: 13px; }
   .summary article { border: 0; border-radius: 15px; padding: 17px 7px; box-shadow: 0 3px 14px rgba(21, 48, 40, .045); }
   .summary b { font-size: 25px; }

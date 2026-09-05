@@ -115,7 +115,7 @@ function StudentForm({ back, refresh }: any) {
     avatarKey: "ballet",
     password: "",
   });
-  let [credential, setCredential] = useState<any>(null);
+  let [credential, setCredential] = useState<any>(null), [copied, setCopied] = useState(false);
   let set = (k: string, v: any) => setF({ ...f, [k]: v });
   async function go(e: FormEvent) {
     e.preventDefault();
@@ -137,22 +137,27 @@ function StudentForm({ back, refresh }: any) {
     return (
       <Page title="学生已创建" back={back}>
         <section className="credential panel">
-          <p>
-            请将以下登录信息发给学生。密码只能在这里查看一次；之后可由老师重置。
-          </p>
-          <label>用户名</label>
-          <input readOnly value={credential.username} />
-          <label>初始密码</label>
-          <input readOnly value={credential.password} />
+          <div className="credential-success">
+            <span>✓</span>
+            <div>
+              <h2>学生账号已创建</h2>
+              <p>请将登录信息发送给学生。</p>
+            </div>
+          </div>
+          <div className="credential-warning">请先复制或截图保存。离开此页后，初始密码将不再显示；需要时可由老师重置。</div>
+          <div className="credential-values">
+            <div><small>登录用户名</small><strong>{credential.username}</strong></div>
+            <div><small>初始密码</small><strong>{credential.password}</strong></div>
+          </div>
           <button
             type="button"
-            onClick={() =>
-              navigator.clipboard.writeText(
-                `用户名：${credential.username}\n密码：${credential.password}`,
-              )
-            }
+            onClick={async () => {
+              const text = `用户名：${credential.username}\n密码：${credential.password}`;
+              try { await navigator.clipboard.writeText(text); setCopied(true); }
+              catch { prompt("请复制以下登录信息", text); }
+            }}
           >
-            复制登录信息
+            {copied ? "已复制登录信息" : "复制账号和密码"}
           </button>
           <button type="button" className="outline" onClick={back}>
             完成
