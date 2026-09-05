@@ -289,6 +289,30 @@ nav .active {
 .tabs button { min-height: 42px; border: 0; border-radius: 7px; background: transparent; color: #66736e; font-size: 14px; font-weight: 600; }
 .tabs button.active { background: #fff; color: #146c5d; box-shadow: 0 2px 7px rgba(24,33,47,.13); }
 .tabs + .days { margin-top: 6px; }
+.appointment-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  padding: 5px;
+  border-radius: 10px;
+  background: #e9efec;
+}
+.appointment-tabs button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #66736e;
+  font-size: 13px;
+  font-weight: 600;
+}
+.appointment-tabs button.active { background: #fff; color: #146c5d; box-shadow: 0 2px 7px rgba(24,33,47,.13); }
+.appointment-tabs small { display: inline-block; min-width: 17px; margin-left: 3px; color: inherit; font-size: 11px; }
+.appointment-date-group { margin-top: 18px; }
+.appointment-date-group h3 { margin: 0 0 8px; color: #53615c; font-size: 14px; }
+.appointment-date-group .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 11px; }
+.appointment-date-group .actions .outline { min-height: 35px; }
+.history-more { display: block; width: 100%; margin-top: 14px; border: 0; background: transparent; color: #146c5d; font-size: 14px; }
 .slots { display: grid; gap: 10px; }
 .slot { min-height: 96px; border-radius: 9px; overflow: hidden; }
 .slot > div { padding: 14px 14px 0; }
@@ -331,6 +355,8 @@ nav .active {
   .days button { flex-basis: 62px; min-height: 66px; border-radius: 13px; font-size: 13px; }
   .tabs { padding: 6px; border-radius: 14px; }
   .tabs button { min-height: 48px; border-radius: 10px; font-size: 15px; }
+  .appointment-tabs { padding: 6px; border-radius: 14px; }
+  .appointment-tabs button { min-height: 48px; border-radius: 10px; font-size: 14px; }
   .slot { border-radius: 17px; }
   .slot > div { padding: 18px 17px 1px; }
   .slot b { font-size: 17px; }

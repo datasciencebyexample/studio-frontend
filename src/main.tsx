@@ -694,66 +694,62 @@ function Teacher() {
         />
       )}{" "}
       {t === "appointments" && (
-        <List
-          title="预约管理"
-          items={appointments}
-          render={(a: any) => (
-            <>
-              <b>{a.courseName}</b>
-              <p>
-                {a.date} {a.startTime} · {a.status}
-              </p>
-              {(a.status === "pending" || a.status === "booked") && (
-                <div className="actions">
-                  <button
-                    className="outline book-action"
-                    onClick={() =>
-                      setAppointmentStatus(a.appointmentId, "confirmed")
-                    }
-                  >
-                    确认
-                  </button>
-                  <button
-                    className="outline danger"
-                    onClick={() =>
-                      setAppointmentStatus(
-                        a.appointmentId,
-                        "cancelled_by_teacher",
-                      )
-                    }
-                  >
-                    取消
-                  </button>
-                </div>
-              )}
-              {a.status === "confirmed" && (
-                <div className="actions">
-                  <button
-                    className="outline"
-                    onClick={() =>
-                      setAppointmentStatus(a.appointmentId, "completed")
-                    }
-                  >
-                    完成并扣课时
-                  </button>
-                  <button
-                    className="outline danger"
-                    onClick={() =>
-                      setAppointmentStatus(
-                        a.appointmentId,
-                        "cancelled_by_teacher",
-                      )
-                    }
-                  >
-                    取消
-                  </button>
-                </div>
-              )}
-            </>
-          )}
+        <AppointmentManager
+          appointments={appointments}
+          schedules={schedules}
+          setStatus={setAppointmentStatus}
         />
       )}
     </main>
+  );
+}
+function AppointmentManager({ appointments, schedules, setStatus }: any) {
+  const [tab, setTab] = useState("pending");
+  const [showAllHistory, setShowAllHistory] = useState(false);
+  const today = shanghaiToday();
+  const courseFor = (appointment: any) => schedules.find((schedule: any) => schedule.scheduleId === appointment.scheduleId);
+  const kind = (appointment: any) => {
+    if (appointment.status === "pending" || appointment.status === "booked") return "pending";
+    const course = courseFor(appointment);
+    return appointment.status === "confirmed" && (!course || course.status === "open") ? "upcoming" : "history";
+  };
+  const labels: any = { pending: "待处理", upcoming: "即将上课", history: "历史记录" };
+  const counts = ["pending", "upcoming", "history"].reduce((result: any, key) => ({ ...result, [key]: appointments.filter((item: any) => kind(item) === key).length }), {});
+  const oldestHistoryDate = addDays(today, -30);
+  const visible = appointments
+    .filter((item: any) => kind(item) === tab)
+    .filter((item: any) => tab !== "history" || showAllHistory || item.date >= oldestHistoryDate)
+    .sort((a: any, b: any) => (tab === "history" ? -1 : 1) * `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`));
+  const groups = visible.reduce((result: any, item: any) => {
+    (result[item.date] ||= []).push(item);
+    return result;
+  }, {});
+  return (
+    <section className="section appointment-manager">
+      <div className="heading"><h2>预约管理</h2></div>
+      <div className="appointment-tabs">
+        {Object.entries(labels).map(([key, label]) => (
+          <button key={key} className={tab === key ? "active" : ""} onClick={() => setTab(key)}>{String(label)}<small>{counts[key]}</small></button>
+        ))}
+      </div>
+      {Object.entries(groups).map(([date, items]: any) => (
+        <section className="appointment-date-group" key={date}>
+          <h3>{date === today ? "今天" : `${date} · 周${weekday(date)}`}</h3>
+          <div className="panel">
+            {items.map((a: any) => (
+              <article className="row" key={a.appointmentId}>
+                <b>{a.startTime} · {a.courseName}</b>
+                <p>{appointmentStatus[a.status] || a.status}</p>
+                {(a.status === "pending" || a.status === "booked") && <div className="actions"><button className="outline" onClick={() => setStatus(a.appointmentId, "confirmed")}>确认预约</button><button className="outline danger" onClick={() => setStatus(a.appointmentId, "cancelled_by_teacher")}>取消</button></div>}
+                {a.status === "confirmed" && <div className="actions"><button className="outline" onClick={() => setStatus(a.appointmentId, "completed")}>完成并扣课时</button><button className="outline danger" onClick={() => setStatus(a.appointmentId, "cancelled_by_teacher")}>取消</button></div>}
+              </article>
+            ))}
+          </div>
+        </section>
+      ))}
+      {!visible.length && <p className="empty">{tab === "history" ? "最近 30 天暂无历史记录。" : `暂无${labels[tab]}预约。`}</p>}
+      {tab === "history" && !showAllHistory && counts.history > visible.length && <button className="history-more" onClick={() => setShowAllHistory(true)}>查看全部历史记录</button>}
+    </section>
   );
 }
 function List({ title, add, click, items, render }: any) {
