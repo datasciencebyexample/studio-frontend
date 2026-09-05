@@ -330,6 +330,8 @@ nav .active {
 }
 .appointment-tabs button.active { background: #fff; color: #146c5d; box-shadow: 0 2px 7px rgba(24,33,47,.13); }
 .appointment-tabs small { display: inline-block; min-width: 17px; margin-left: 3px; color: inherit; font-size: 11px; }
+.student-tabs { grid-template-columns: repeat(2, 1fr); }
+.student-list { margin-top: 14px; }
 .appointment-date-group { margin-top: 18px; }
 .appointment-date-group h3 { margin: 0 0 8px; color: #53615c; font-size: 14px; }
 .appointment-row .appointment-student { color: #146c5d; font-weight: 600; }

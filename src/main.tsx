@@ -675,28 +675,11 @@ function Teacher() {
         />
       )}{" "}
       {t === "students" && (
-        <List
-          title="学生课时"
-          add="添加学生"
-          click={() => ss("student")}
-          items={students}
-          render={(s: any) => (
-            <>
-              <b>{s.name}</b>
-              <p>
-                {cards[s.cardType]} ·{" "}
-                {s.cardType === "times"
-                  ? `剩余 ${s.remainingLessons} 课时 · `
-                  : ""}
-                有效期 {s.expiresAt}
-              </p>
-              <small>{s.username}</small>
-              <div className="student-actions">
-                <button className="outline" onClick={() => { setSelectedStudent(s); ss("student-detail"); }}>详情</button>
-                <button className="outline" onClick={() => resetPassword(s.studentId)}>重置密码</button>
-              </div>
-            </>
-          )}
+        <StudentManager
+          students={students}
+          add={() => ss("student")}
+          detail={(student: any) => { setSelectedStudent(student); ss("student-detail"); }}
+          resetPassword={resetPassword}
         />
       )}{" "}
       {t === "appointments" && (
@@ -708,6 +691,38 @@ function Teacher() {
         />
       )}
     </main>
+  );
+}
+function StudentManager({ students, add, detail, resetPassword }: any) {
+  const [tab, setTab] = useState("active");
+  const today = shanghaiToday();
+  const usable = (student: any) => student.expiresAt >= today && (student.cardType !== "times" || Number(student.remainingLessons) > 0);
+  const active = students.filter(usable);
+  const inactive = students.filter((student: any) => !usable(student));
+  const items = tab === "active" ? active : inactive;
+  const reason = (student: any) => {
+    const expired = student.expiresAt < today;
+    const exhausted = student.cardType === "times" && Number(student.remainingLessons) <= 0;
+    return expired && exhausted ? "已过期 · 课时已用完" : expired ? "课卡已过期" : "课时已用完";
+  };
+  return (
+    <section className="section student-manager">
+      <div className="heading"><h2>学生课时</h2><button className="outline" onClick={add}>添加学生</button></div>
+      <div className="appointment-tabs student-tabs">
+        <button className={tab === "active" ? "active" : ""} onClick={() => setTab("active")}>正常学生<small>{active.length}</small></button>
+        <button className={tab === "inactive" ? "active" : ""} onClick={() => setTab("inactive")}>已过期／用完<small>{inactive.length}</small></button>
+      </div>
+      <div className="panel student-list">
+        {items.length ? items.map((student: any) => (
+          <article className="row" key={student.studentId}>
+            <b>{student.name}</b>
+            <p>{cards[student.cardType]} · {student.cardType === "times" ? `剩余 ${student.remainingLessons} 课时 · ` : ""}有效期 {student.expiresAt}</p>
+            <small className={tab === "inactive" ? "course-cancelled" : ""}>{tab === "inactive" ? reason(student) : student.username}</small>
+            <div className="student-actions"><button className="outline" onClick={() => detail(student)}>详情</button><button className="outline" onClick={() => resetPassword(student.studentId)}>重置密码</button></div>
+          </article>
+        )) : <p className="empty">{tab === "active" ? "暂无正常学生。" : "暂无已过期或课时用完的学生。"}</p>}
+      </div>
+    </section>
   );
 }
 function StudentDetail({ student, appointments, back }: any) {
