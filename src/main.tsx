@@ -836,7 +836,8 @@ function Student() {
     [s, ss] = useState<any[]>([]),
     [appointments, setAppointments] = useState<any[]>([]),
     [kind, sk] = useState("daily"),
-    [day, sd] = useState(shanghaiToday());
+    [day, sd] = useState(shanghaiToday()),
+    [appointmentTab, setAppointmentTab] = useState("upcoming");
   useEffect(() => {
     Promise.all([
       api("/v1/students/me"),
@@ -867,6 +868,9 @@ function Student() {
     : cardExpired
       ? "你的课程卡已过期。请联系老师续卡后再预约课程。"
       : "你的次卡课时已用完。请联系老师补充课时后再预约课程。";
+  const upcomingAppointments = appointments.filter((appointment) => ["pending", "booked", "confirmed"].includes(appointment.status)).sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`));
+  const historyAppointments = appointments.filter((appointment) => !["pending", "booked", "confirmed"].includes(appointment.status)).sort((a, b) => `${b.date} ${b.startTime}`.localeCompare(`${a.date} ${a.startTime}`));
+  const shownAppointments = appointmentTab === "upcoming" ? upcomingAppointments : historyAppointments;
   return (
     <main className="page">
       <header>我的课程</header>
@@ -980,10 +984,14 @@ function Student() {
         </div>
       </section>
       <section className="section">
-        <h2>我的预约</h2>
-        <div className="panel">
-          {appointments.length ? (
-            appointments.map((appointment) => (
+        <div className="heading"><h2>我的预约</h2></div>
+        <div className="appointment-tabs student-appointment-tabs">
+          <button className={appointmentTab === "upcoming" ? "active" : ""} onClick={() => setAppointmentTab("upcoming")}>待参加<small>{upcomingAppointments.length}</small></button>
+          <button className={appointmentTab === "history" ? "active" : ""} onClick={() => setAppointmentTab("history")}>已完成／已取消<small>{historyAppointments.length}</small></button>
+        </div>
+        <div className="panel student-appointments">
+          {shownAppointments.length ? (
+            shownAppointments.map((appointment) => (
               <article className="row" key={appointment.appointmentId}>
                 <b>
                   {appointment.date} {appointment.startTime} ·{" "}
@@ -998,7 +1006,7 @@ function Student() {
               </article>
             ))
           ) : (
-            <p className="empty">还没有预约记录。</p>
+            <p className="empty">{appointmentTab === "upcoming" ? "暂无待参加课程。" : "暂无已完成或已取消记录。"}</p>
           )}
         </div>
       </section>
