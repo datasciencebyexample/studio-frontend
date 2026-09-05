@@ -190,6 +190,18 @@ h2 {
 .row:last-child {
   border: 0;
 }
+.course-row-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.course-row-title b { min-width: 0; }
+.compact-edit {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 4px 10px;
+}
 .row > .outline { margin-top: 10px; }
 .row b {
   font-size: 15px;
@@ -303,6 +315,7 @@ nav .active {
   .row b { font-size: 16px; }
   .row p, .row small, .empty { font-size: 14px; line-height: 1.55; }
   .outline { min-height: 42px; border-radius: 10px; padding: 8px 13px; font-size: 14px; }
+  .compact-edit { min-height: 36px; padding: 5px 11px; }
   .summary { gap: 10px; }
   .summary article { border: 0; border-radius: 15px; padding: 17px 7px; box-shadow: 0 3px 14px rgba(21, 48, 40, .045); }
   .summary b { font-size: 25px; }

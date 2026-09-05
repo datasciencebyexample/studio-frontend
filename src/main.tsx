@@ -584,9 +584,22 @@ function Teacher() {
                 .filter((schedule: any) => schedule.date === selectedDate)
                 .map((schedule: any) => (
                   <article className="row" key={schedule.scheduleId}>
-                    <b>
-                      {schedule.startTime} · {schedule.courseName}
-                    </b>
+                    <div className="course-row-title">
+                      <b>
+                        {schedule.startTime} · {schedule.courseName}
+                      </b>
+                      {schedule.status === "open" && (
+                        <button
+                          className="outline compact-edit"
+                          onClick={() => {
+                            setEditing(schedule);
+                            ss("schedule");
+                          }}
+                        >
+                          编辑
+                        </button>
+                      )}
+                    </div>
                     <p>
                       {schedule.classType === "custom"
                         ? "定制课"
