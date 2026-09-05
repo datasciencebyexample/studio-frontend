@@ -855,6 +855,14 @@ function Student() {
         x.classType === kind &&
         (kind === "custom" || x.date === day),
     );
+  const cardExpired = p.expiresAt < shanghaiToday();
+  const lessonsExhausted = p.cardType === "times" && Number(p.remainingLessons) <= 0;
+  const accountUnavailable = cardExpired || lessonsExhausted;
+  const accountMessage = cardExpired && lessonsExhausted
+    ? "你的课程卡已过期，且次卡课时已用完。请联系老师续卡或补充课时后再预约。"
+    : cardExpired
+      ? "你的课程卡已过期。请联系老师续卡后再预约课程。"
+      : "你的次卡课时已用完。请联系老师补充课时后再预约课程。";
   return (
     <main className="page">
       <header>我的课程</header>
@@ -868,6 +876,12 @@ function Student() {
           <strong>剩余 {p.remainingLessons} 课时</strong>
         )}
       </section>
+      {accountUnavailable && (
+        <section className="account-alert" role="alert">
+          <span>!</span>
+          <div><b>暂时无法预约新课程</b><p>{accountMessage}</p></div>
+        </section>
+      )}
       <section className="section">
         <div className="tabs">
           <button
@@ -926,7 +940,7 @@ function Student() {
                 ) : (
                   <button
                     className="outline book-action"
-                    disabled={!x.allowBooking || x.bookedCount >= x.capacity || pastCutoff}
+                    disabled={accountUnavailable || !x.allowBooking || x.bookedCount >= x.capacity || pastCutoff}
                     onClick={async () => {
                       if (confirm("确认预约这个时间段？")) {
                         try {
@@ -940,7 +954,7 @@ function Student() {
                       }
                     }}
                   >
-                    预约
+                    {accountUnavailable ? "课程卡不可用" : "预约"}
                   </button>
                 )}
               </article>

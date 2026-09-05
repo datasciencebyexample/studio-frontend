@@ -228,6 +228,10 @@ h2 {
 .student-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .student-stats span { padding: 10px 5px; border-radius: 8px; background: #f2f7f5; text-align: center; color: #68766f; font-size: 12px; }
 .student-stats b { display: block; margin-bottom: 4px; color: #146c5d; font-size: 20px; }
+.account-alert { display: flex; gap: 11px; margin-top: 15px; padding: 14px; border: 1px solid #f1d0a5; border-radius: 11px; background: #fff6e8; color: #7e571c; }
+.account-alert > span { display: grid; flex: 0 0 auto; width: 23px; height: 23px; place-items: center; border-radius: 50%; background: #dc9836; color: #fff; font-weight: 800; }
+.account-alert b { font-size: 14px; }
+.account-alert p { margin: 4px 0 0; font-size: 13px; line-height: 1.55; }
 .empty {
   padding: 14px;
 }
@@ -376,6 +380,9 @@ nav .active {
   .credential-success h2 { font-size: 21px; }
   .credential-warning { padding: 12px; font-size: 14px; }
   .credential-values > div { padding: 15px; }
+  .account-alert { margin-top: 18px; padding: 15px; border-radius: 13px; }
+  .account-alert b { font-size: 15px; }
+  .account-alert p { font-size: 14px; }
   .student-stats span { padding: 12px 5px; font-size: 13px; }
   .summary article { border: 0; border-radius: 15px; padding: 17px 7px; box-shadow: 0 3px 14px rgba(21, 48, 40, .045); }
   .summary b { font-size: 25px; }
