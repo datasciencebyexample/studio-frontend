@@ -717,7 +717,18 @@ function StudentManager({ students, add, detail, resetPassword }: any) {
   const usable = (student: any) => (!student.expiresAt || student.expiresAt >= today) && (student.cardType !== "times" || Number(student.remainingLessons) > 0);
   const active = students.filter(usable);
   const inactive = students.filter((student: any) => !usable(student));
-  const items = tab === "active" ? active : inactive;
+  const reminderReason = (student: any) => {
+    const daysUntilExpiry = student.expiresAt ? Math.floor((Date.parse(`${student.expiresAt}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000) : Infinity;
+    const expiring = daysUntilExpiry >= 0 && daysUntilExpiry <= 7;
+    const lowLessons = student.cardType === "times" && Number(student.remainingLessons) > 0 && Number(student.remainingLessons) <= 2;
+    if (expiring && lowLessons) return `还有 ${daysUntilExpiry} 天到期 · 剩余 ${student.remainingLessons} 课时`;
+    return expiring ? `还有 ${daysUntilExpiry} 天到期` : `仅剩 ${student.remainingLessons} 课时`;
+  };
+  const reminders = active.filter((student: any) => {
+    const daysUntilExpiry = student.expiresAt ? Math.floor((Date.parse(`${student.expiresAt}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000) : Infinity;
+    return (daysUntilExpiry >= 0 && daysUntilExpiry <= 7) || (student.cardType === "times" && Number(student.remainingLessons) > 0 && Number(student.remainingLessons) <= 2);
+  });
+  const items = tab === "active" ? active : tab === "reminders" ? reminders : inactive;
   const reason = (student: any) => {
     const expired = Boolean(student.expiresAt) && student.expiresAt < today;
     const exhausted = student.cardType === "times" && Number(student.remainingLessons) <= 0;
@@ -728,6 +739,7 @@ function StudentManager({ students, add, detail, resetPassword }: any) {
       <div className="heading"><h2>学生课时</h2><button className="outline" onClick={add}>添加学生</button></div>
       <div className="appointment-tabs student-tabs">
         <button className={tab === "active" ? "active" : ""} onClick={() => setTab("active")}>正常学生<small>{active.length}</small></button>
+        <button className={tab === "reminders" ? "active" : ""} onClick={() => setTab("reminders")}>需提醒<small>{reminders.length}</small></button>
         <button className={tab === "inactive" ? "active" : ""} onClick={() => setTab("inactive")}>已过期／用完<small>{inactive.length}</small></button>
       </div>
       <div className="panel student-list">
@@ -735,10 +747,10 @@ function StudentManager({ students, add, detail, resetPassword }: any) {
           <article className="row" key={student.studentId}>
             <b>{student.name}</b>
             <p>{cards[student.cardType]} · {student.cardType === "times" ? `剩余 ${student.remainingLessons} 课时 · ` : ""}{student.expiresAt ? `有效期 ${student.expiresAt}` : `首次完成课程后起算 ${student.validityDays} 天`}</p>
-            <small className={tab === "inactive" ? "course-cancelled" : ""}>{tab === "inactive" ? reason(student) : student.username}</small>
+            <small className={tab === "inactive" ? "course-cancelled" : tab === "reminders" ? "student-reminder" : ""}>{tab === "inactive" ? reason(student) : tab === "reminders" ? reminderReason(student) : student.username}</small>
             <div className="student-actions"><button className="outline" onClick={() => detail(student)}>详情</button><button className="outline" onClick={() => resetPassword(student.studentId)}>重置密码</button></div>
           </article>
-        )) : <p className="empty">{tab === "active" ? "暂无正常学生。" : "暂无已过期或课时用完的学生。"}</p>}
+        )) : <p className="empty">{tab === "active" ? "暂无正常学生。" : tab === "reminders" ? "暂无需要提醒的学生。" : "暂无已过期或课时用完的学生。"}</p>}
       </div>
     </section>
   );
