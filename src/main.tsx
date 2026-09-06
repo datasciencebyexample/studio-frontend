@@ -111,19 +111,20 @@ function StudentForm({ back, refresh }: any) {
     phone: "",
     purchasedAt: "",
     expiresAt: "",
+    validityDays: 30,
     cardType: "times",
     remainingLessons: 8,
     avatarKey: "ballet",
     password: "",
   });
-  let [credential, setCredential] = useState<any>(null), [copied, setCopied] = useState(false);
+  let [credential, setCredential] = useState<any>(null), [copied, setCopied] = useState(false), [validityMode, setValidityMode] = useState("date");
   let set = (k: string, v: any) => setF({ ...f, [k]: v });
   async function go(e: FormEvent) {
     e.preventDefault();
     try {
       let r = await api("/v1/students", {
         method: "POST",
-        body: JSON.stringify({ ...f, password: f.password || undefined }),
+        body: JSON.stringify({ ...f, expiresAt: validityMode === "date" ? f.expiresAt : undefined, validityDays: validityMode === "days" ? f.validityDays : undefined, password: f.password || undefined }),
       });
       refresh();
       setCredential({
@@ -236,12 +237,18 @@ function StudentForm({ back, refresh }: any) {
           </Field>
         )}
         <Field label="课程有效期">
-          <input
-            type="date"
-            value={f.expiresAt}
-            onChange={(x) => set("expiresAt", x.target.value)}
-            required
-          />
+          <div className="twos validity-choice">
+            <button type="button" className={validityMode === "date" ? "selected" : ""} onClick={() => setValidityMode("date")}>指定到期日期</button>
+            <button type="button" className={validityMode === "days" ? "selected" : ""} onClick={() => setValidityMode("days")}>首次完成后按天数</button>
+          </div>
+          {validityMode === "date" ? (
+            <input type="date" value={f.expiresAt} onChange={(x) => set("expiresAt", x.target.value)} required />
+          ) : (
+            <>
+              <input type="number" min="1" max="3650" value={f.validityDays} onChange={(x) => set("validityDays", +x.target.value)} required />
+              <small className="field-note">学生首次成功完成课程当天起，自动计算 {f.validityDays || 0} 天有效期。</small>
+            </>
+          )}
         </Field>
         <Field label="初始密码（留空自动生成）">
           <input
@@ -707,12 +714,12 @@ function Teacher() {
 function StudentManager({ students, add, detail, resetPassword }: any) {
   const [tab, setTab] = useState("active");
   const today = shanghaiToday();
-  const usable = (student: any) => student.expiresAt >= today && (student.cardType !== "times" || Number(student.remainingLessons) > 0);
+  const usable = (student: any) => (!student.expiresAt || student.expiresAt >= today) && (student.cardType !== "times" || Number(student.remainingLessons) > 0);
   const active = students.filter(usable);
   const inactive = students.filter((student: any) => !usable(student));
   const items = tab === "active" ? active : inactive;
   const reason = (student: any) => {
-    const expired = student.expiresAt < today;
+    const expired = Boolean(student.expiresAt) && student.expiresAt < today;
     const exhausted = student.cardType === "times" && Number(student.remainingLessons) <= 0;
     return expired && exhausted ? "已过期 · 课时已用完" : expired ? "课卡已过期" : "课时已用完";
   };
@@ -727,7 +734,7 @@ function StudentManager({ students, add, detail, resetPassword }: any) {
         {items.length ? items.map((student: any) => (
           <article className="row" key={student.studentId}>
             <b>{student.name}</b>
-            <p>{cards[student.cardType]} · {student.cardType === "times" ? `剩余 ${student.remainingLessons} 课时 · ` : ""}有效期 {student.expiresAt}</p>
+            <p>{cards[student.cardType]} · {student.cardType === "times" ? `剩余 ${student.remainingLessons} 课时 · ` : ""}{student.expiresAt ? `有效期 ${student.expiresAt}` : `首次完成课程后起算 ${student.validityDays} 天`}</p>
             <small className={tab === "inactive" ? "course-cancelled" : ""}>{tab === "inactive" ? reason(student) : student.username}</small>
             <div className="student-actions"><button className="outline" onClick={() => detail(student)}>详情</button><button className="outline" onClick={() => resetPassword(student.studentId)}>重置密码</button></div>
           </article>
@@ -752,7 +759,7 @@ function StudentDetail({ student, appointments, back }: any) {
           <span><b>{completed.length}</b>累计完成</span>
           <span><b>{records.length}</b>累计预约</span>
         </div>
-        <small>{cards[student.cardType]} · 课程开卡时间 {student.purchasedAt} · 有效期至 {student.expiresAt}</small>
+        <small>{cards[student.cardType]} · 登记日期 {student.purchasedAt} · {student.expiresAt ? `有效期至 ${student.expiresAt}` : `有效期将在首次完成课程后起算 ${student.validityDays} 天`}</small>
       </section>
       <section className="section"><div className="heading"><h2>待处理与即将上课</h2><span>{active.length}</span></div><RecordList items={active} /></section>
       <section className="section"><div className="heading"><h2>课时记录</h2><span>{completed.length}</span></div><RecordList items={completed} lesson /></section>
@@ -867,11 +874,11 @@ function Student() {
         x.classType === kind &&
         (kind === "custom" || x.date === day),
     );
-  const cardExpired = p.expiresAt < shanghaiToday();
+  const cardExpired = Boolean(p.expiresAt) && p.expiresAt < shanghaiToday();
   const lessonsExhausted = p.cardType === "times" && Number(p.remainingLessons) <= 0;
   const accountUnavailable = cardExpired || lessonsExhausted;
-  const expiryDays = Math.floor((Date.parse(`${p.expiresAt}T00:00:00Z`) - Date.parse(`${shanghaiToday()}T00:00:00Z`)) / 86_400_000);
-  const cardExpiringSoon = !cardExpired && expiryDays <= 30;
+  const expiryDays = p.expiresAt ? Math.floor((Date.parse(`${p.expiresAt}T00:00:00Z`) - Date.parse(`${shanghaiToday()}T00:00:00Z`)) / 86_400_000) : Infinity;
+  const cardExpiringSoon = Boolean(p.expiresAt) && !cardExpired && expiryDays <= 30;
   const lessonsLow = p.cardType === "times" && Number(p.remainingLessons) > 0 && Number(p.remainingLessons) < 2;
   const accountMessage = cardExpired && lessonsExhausted
     ? "你的课程卡已过期，且次卡课时已用完。请联系老师续卡或补充课时后再预约。"
@@ -888,7 +895,7 @@ function Student() {
         <div>🩰</div>
         <b>{p.name}</b>
         <p>
-          {cards[p.cardType]} · 有效期至 {p.expiresAt}
+          {cards[p.cardType]} · {p.expiresAt ? `有效期至 ${p.expiresAt}` : `首次完成课程后起算 ${p.validityDays} 天`}
         </p>
         {p.cardType === "times" && (
           <strong>剩余 {p.remainingLessons} 课时</strong>
