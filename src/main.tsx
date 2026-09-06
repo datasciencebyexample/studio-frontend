@@ -1006,6 +1006,9 @@ function Student() {
                 <p>状态：{appointmentStatus[appointment.status] || appointment.status}</p>
                 {["pending", "confirmed"].includes(appointment.status) && (() => {
                   const schedule = s.find((course) => course.scheduleId === appointment.scheduleId);
+                  if (!schedule || schedule.status !== "open") {
+                    return <small className="rule-note">课程已结束或已取消，预约不能取消</small>;
+                  }
                   const pastCutoff = isPastCancellationCutoff(schedule);
                   return pastCutoff ? <small className="rule-note">已过开课前 2 小时取消截止时间</small> : <button className="outline danger cancel-action" onClick={async () => { if (!confirm("取消后会释放一个预约名额。")) return; try { await api(`/v1/appointments/${appointment.appointmentId}/cancel`, { method: "POST" }); location.reload(); } catch (error) { alert((error as Error).message); } }}>取消预约</button>;
                 })()}
