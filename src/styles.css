@@ -315,6 +315,8 @@ nav .active {
 .days { display: flex; gap: 8px; overflow-x: auto; padding: 12px 0 16px; }
 .days button { flex: 0 0 56px; min-height: 58px; border: 1px solid #dce5e2; border-radius: 9px; background: #fff; color: #64717e; font-size: 12px; line-height: 1.65; }
 .days button.active { border-color: #146c5d; background: #146c5d; color: #fff; font-weight: 700; box-shadow: 0 4px 10px rgba(20,108,93,.18); }
+.date-picker { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 13px; padding: 10px 12px; border: 1px solid #dce5e2; border-radius: 9px; background: #fff; color: #53615c; font-size: 13px; }
+.date-picker input { width: 138px; min-height: 32px; border: 0; background: transparent; color: #146c5d; font: inherit; text-align: right; }
 .selected-day { margin: 0 0 10px; color: #6b7685; font-size: 13px; }
 .selected-day strong { color: #146c5d; font-weight: 700; }
 .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; border-radius: 10px; background: #e9efec; }
@@ -399,6 +401,8 @@ nav .active {
   nav button { min-height: 50px; font-size: 14px; }
   .days { gap: 9px; margin: 0 -20px; padding: 12px 20px 18px; }
   .days button { flex-basis: 62px; min-height: 66px; border-radius: 13px; font-size: 13px; }
+  .date-picker { min-height: 53px; margin-bottom: 15px; padding: 10px 14px; border-radius: 13px; font-size: 14px; }
+  .date-picker input { min-height: 38px; font-size: 15px; }
   .tabs { padding: 6px; border-radius: 14px; }
   .tabs button { min-height: 48px; border-radius: 10px; font-size: 15px; }
   .appointment-tabs { padding: 6px; border-radius: 14px; }

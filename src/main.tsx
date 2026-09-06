@@ -596,6 +596,10 @@ function Teacher() {
                 );
               })}
             </div>
+            <label className="date-picker">
+              <span>选择其他日期</span>
+              <input type="date" min={shanghaiToday()} value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} />
+            </label>
             <div className="selected-day">查看 <strong>{selectedDate} · 周{weekday(selectedDate)}</strong> 的课程</div>
             <div className="panel">
               {schedules
@@ -921,20 +925,26 @@ function Student() {
           </button>
         </div>
         {kind === "daily" && (
-          <div className="days">
-            {days.map((d) => (
-              <button
-                className={day === d ? "active" : ""}
-                onClick={() => sd(d)}
-                key={d}
-              >
-                周
-                {weekday(d)}
-                <br />
-                {d.slice(5).replace("-", "/")}
-              </button>
-            ))}
-          </div>
+          <>
+            <div className="days">
+              {days.map((d) => (
+                <button
+                  className={day === d ? "active" : ""}
+                  onClick={() => sd(d)}
+                  key={d}
+                >
+                  周
+                  {weekday(d)}
+                  <br />
+                  {d.slice(5).replace("-", "/")}
+                </button>
+              ))}
+            </div>
+            <label className="date-picker">
+              <span>选择其他日期</span>
+              <input type="date" min={shanghaiToday()} value={day} onChange={(event) => sd(event.target.value)} />
+            </label>
+          </>
         )}
         <div className="slots">
           {visible.map((x) => {
