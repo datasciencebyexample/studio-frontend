@@ -104,29 +104,35 @@ function Login({ done }: any) {
     </main>
   );
 }
-function StudentForm({ back, refresh }: any) {
+function StudentForm({ back, refresh, student }: any) {
+  const editing = Boolean(student);
   let [f, setF] = useState<any>({
-    name: "",
-    username: "",
-    phone: "",
-    purchasedAt: "",
-    expiresAt: "",
-    validityDays: 30,
-    cardType: "times",
-    remainingLessons: 8,
-    avatarKey: "ballet",
+    name: student?.name || "",
+    username: student?.username || "",
+    phone: student?.phone || student?.username || "",
+    purchasedAt: student?.purchasedAt || "",
+    expiresAt: student?.expiresAt || "",
+    validityDays: student?.validityDays || 30,
+    cardType: student?.cardType || "times",
+    remainingLessons: student?.remainingLessons ?? 8,
+    avatarKey: student?.avatarKey || "ballet",
     password: "",
   });
-  let [credential, setCredential] = useState<any>(null), [copied, setCopied] = useState(false), [validityMode, setValidityMode] = useState("date");
+  let [credential, setCredential] = useState<any>(null), [copied, setCopied] = useState(false), [validityMode, setValidityMode] = useState(student?.expiresAt ? "date" : "days");
   let set = (k: string, v: any) => setF({ ...f, [k]: v });
   async function go(e: FormEvent) {
     e.preventDefault();
     try {
-      let r = await api("/v1/students", {
-        method: "POST",
+      let r = await api(editing ? `/v1/students/${student.studentId}` : "/v1/students", {
+        method: editing ? "PUT" : "POST",
         body: JSON.stringify({ ...f, expiresAt: validityMode === "date" ? f.expiresAt : undefined, validityDays: validityMode === "days" ? f.validityDays : undefined, password: f.password || undefined }),
       });
       refresh();
+      if (editing) {
+        alert("学生资料已保存。登录密码保持不变。");
+        back();
+        return;
+      }
       setCredential({
         username: r.username,
         password: f.password || r.temporaryPassword,
@@ -168,7 +174,7 @@ function StudentForm({ back, refresh }: any) {
       </Page>
     );
   return (
-    <Page title="添加学生" back={back}>
+    <Page title={editing ? "编辑学生资料" : "添加学生"} back={back}>
       <form className="form" onSubmit={go}>
         <Field label="选择头像">
           <div className="avatars">
@@ -226,7 +232,7 @@ function StudentForm({ back, refresh }: any) {
           </div>
         </Field>
         {f.cardType === "times" && (
-          <Field label="初始剩余课时">
+        <Field label={editing ? "当前剩余课时" : "初始剩余课时"}>
             <input
               type="number"
               min="0"
@@ -250,15 +256,16 @@ function StudentForm({ back, refresh }: any) {
             </>
           )}
         </Field>
-        <Field label="初始密码（留空自动生成）">
+        {!editing && <Field label="初始密码（留空自动生成）">
           <input
             minLength={8}
             placeholder="自动生成安全密码"
             value={f.password}
             onChange={(x) => set("password", x.target.value)}
           />
-        </Field>
-        <button>创建并生成登录信息</button>
+        </Field>}
+        {editing && <p className="field-note form-note">更正手机号会同步更改登录用户名；密码不会改变。如需改密码，请返回学生列表使用“重置密码”。</p>}
+        <button>{editing ? "保存学生资料" : "创建并生成登录信息"}</button>
       </form>
     </Page>
   );
@@ -497,6 +504,8 @@ function Teacher() {
   }, []);
   if (screen === "student")
     return <StudentForm back={() => ss("home")} refresh={load} />;
+  if (screen === "student-edit")
+    return <StudentForm student={selectedStudent} back={() => ss("home")} refresh={load} />;
   if (screen === "schedule")
     return <ScheduleForm back={() => ss("home")} refresh={load} schedule={editing} />;
   if (screen === "student-detail")
@@ -697,6 +706,7 @@ function Teacher() {
           students={students}
           add={() => ss("student")}
           detail={(student: any) => { setSelectedStudent(student); ss("student-detail"); }}
+          edit={(student: any) => { setSelectedStudent(student); ss("student-edit"); }}
           resetPassword={resetPassword}
         />
       )}{" "}
@@ -711,7 +721,7 @@ function Teacher() {
     </main>
   );
 }
-function StudentManager({ students, add, detail, resetPassword }: any) {
+function StudentManager({ students, add, detail, edit, resetPassword }: any) {
   const [tab, setTab] = useState("active");
   const today = shanghaiToday();
   const usable = (student: any) => (!student.expiresAt || student.expiresAt >= today) && (student.cardType !== "times" || Number(student.remainingLessons) > 0);
@@ -748,7 +758,7 @@ function StudentManager({ students, add, detail, resetPassword }: any) {
             <b>{student.name}</b>
             <p>{cards[student.cardType]} · {student.cardType === "times" ? `剩余 ${student.remainingLessons} 课时 · ` : ""}{student.expiresAt ? `有效期 ${student.expiresAt}` : `首次完成课程后起算 ${student.validityDays} 天`}</p>
             <small className={tab === "inactive" ? "course-cancelled" : tab === "reminders" ? "student-reminder" : ""}>{tab === "inactive" ? reason(student) : tab === "reminders" ? reminderReason(student) : student.username}</small>
-            <div className="student-actions"><button className="outline" onClick={() => detail(student)}>详情</button><button className="outline" onClick={() => resetPassword(student.studentId)}>重置密码</button></div>
+            <div className="student-actions"><button className="outline" onClick={() => detail(student)}>详情</button><button className="outline" onClick={() => edit(student)}>编辑资料</button><button className="outline" onClick={() => resetPassword(student.studentId)}>重置密码</button></div>
           </article>
         )) : <p className="empty">{tab === "active" ? "暂无正常学生。" : tab === "reminders" ? "暂无需要提醒的学生。" : "暂无已过期或课时用完的学生。"}</p>}
       </div>
