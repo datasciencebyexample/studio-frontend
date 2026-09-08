@@ -58,6 +58,10 @@ function weekday(date: string) {
 function isPastCancellationCutoff(schedule: any) {
   return Boolean(schedule?.cancellationCutoffAt && Date.now() >= Date.parse(schedule.cancellationCutoffAt));
 }
+function hasCourseStarted(schedule: any) {
+  const start = schedule?.startAt || (schedule?.date && schedule?.startTime ? `${schedule.date}T${schedule.startTime}:00+08:00` : "");
+  return Boolean(start && Date.now() >= Date.parse(start));
+}
 function Login({ done }: any) {
   const [u, su] = useState(""),
     [p, sp] = useState(""),
@@ -984,6 +988,7 @@ function Student() {
             );
             const isBooked = Boolean(activeAppointment);
             const pastCutoff = isPastCancellationCutoff(x);
+            const started = hasCourseStarted(x);
             return (
               <article className="panel slot" key={x.scheduleId}>
                 <div>
@@ -995,7 +1000,7 @@ function Student() {
                     {x.duration} 分钟 · 剩余 {x.capacity - x.bookedCount} 人
                   </small>
                   <small className="rule-note">
-                    {pastCutoff ? "已过预约截止时间" : "开课前 2 小时可免费取消"}
+                    {started ? "课程已开始，不能预约或取消" : pastCutoff ? "距开课不足 2 小时，预约后不可取消" : "开课前 2 小时可免费取消"}
                   </small>
                 </div>
                 {isBooked ? (
@@ -1005,7 +1010,7 @@ function Student() {
                 ) : (
                   <button
                     className="outline book-action"
-                    disabled={accountUnavailable || !x.allowBooking || x.bookedCount >= x.capacity || pastCutoff}
+                    disabled={accountUnavailable || !x.allowBooking || x.bookedCount >= x.capacity || started}
                     onClick={async () => {
                       if (confirm("确认预约这个时间段？")) {
                         try {
