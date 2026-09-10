@@ -274,6 +274,50 @@ function StudentForm({ back, refresh, student }: any) {
     </Page>
   );
 }
+function TeacherBooking({ student, schedules, appointments, back, refresh }: any) {
+  const [submitting, setSubmitting] = useState("");
+  const cardUnavailable = (student.expiresAt && student.expiresAt < shanghaiToday()) || (student.cardType === "times" && Number(student.remainingLessons) <= 0);
+  const choices = schedules
+    .filter((course: any) => course.status === "open" && course.allowBooking && !hasCourseStarted(course))
+    .sort((a: any, b: any) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`));
+  async function reserve(course: any) {
+    if (!confirm(`确认代「${student.name}」预约 ${course.date} ${course.startTime} 的「${course.courseName}」？${student.cardType === "times" ? "将扣除 1 课时。" : ""}`)) return;
+    setSubmitting(course.scheduleId);
+    try {
+      await api(`/v1/students/${student.studentId}/book`, { method: "POST", body: JSON.stringify({ scheduleId: course.scheduleId }) });
+      await refresh();
+      alert("已为学生预约，等待老师确认。");
+      back();
+    } catch (error) {
+      alert((error as Error).message);
+    } finally {
+      setSubmitting("");
+    }
+  }
+  return (
+    <Page title="代学生预约" back={back}>
+      <section className="student-profile panel">
+        <h2>{student.name}</h2>
+        <p>{student.username} · {cards[student.cardType]}{student.cardType === "times" ? ` · 剩余 ${student.remainingLessons} 课时` : ""}</p>
+        {cardUnavailable && <small className="course-cancelled">该学生课卡已过期或课时不足，不能预约。</small>}
+      </section>
+      <section className="section">
+        <div className="heading"><h2>可代预约课程</h2><span>{choices.length}</span></div>
+        <div className="panel">
+          {choices.length ? choices.map((course: any) => {
+            const alreadyBooked = appointments.some((appointment: any) => appointment.studentId === student.studentId && appointment.scheduleId === course.scheduleId && ["pending", "booked", "confirmed"].includes(appointment.status));
+            const unavailable = cardUnavailable || alreadyBooked || course.bookedCount >= course.capacity || Boolean(submitting);
+            return <article className="row" key={course.scheduleId}>
+              <b>{course.date} {course.startTime} · {course.courseName}</b>
+              <p>{course.classType === "custom" ? "定制课" : "成人日常课"} · {course.duration} 分钟 · 剩余 {course.capacity - course.bookedCount} 人</p>
+              <button className="outline" disabled={unavailable} onClick={() => reserve(course)}>{submitting === course.scheduleId ? "正在预约…" : alreadyBooked ? "已预约" : course.bookedCount >= course.capacity ? "课程已满" : "代预约"}</button>
+            </article>;
+          }) : <p className="empty">暂无尚未开始且开放预约的课程。</p>}
+        </div>
+      </section>
+    </Page>
+  );
+}
 function ScheduleForm({ back, refresh, schedule }: any) {
   let [f, sf] = useState<any>({
     classType: "daily",
@@ -510,6 +554,8 @@ function Teacher() {
     return <StudentForm back={() => ss("home")} refresh={load} />;
   if (screen === "student-edit")
     return <StudentForm student={selectedStudent} back={() => ss("home")} refresh={load} />;
+  if (screen === "student-book")
+    return <TeacherBooking student={selectedStudent} schedules={data.schedules} appointments={data.appointments} back={() => ss("home")} refresh={load} />;
   if (screen === "schedule")
     return <ScheduleForm back={() => ss("home")} refresh={load} schedule={editing} />;
   if (screen === "student-detail")
@@ -711,6 +757,7 @@ function Teacher() {
           add={() => ss("student")}
           detail={(student: any) => { setSelectedStudent(student); ss("student-detail"); }}
           edit={(student: any) => { setSelectedStudent(student); ss("student-edit"); }}
+          book={(student: any) => { setSelectedStudent(student); ss("student-book"); }}
           resetPassword={resetPassword}
         />
       )}{" "}
@@ -725,7 +772,7 @@ function Teacher() {
     </main>
   );
 }
-function StudentManager({ students, add, detail, edit, resetPassword }: any) {
+function StudentManager({ students, add, detail, edit, book, resetPassword }: any) {
   const [tab, setTab] = useState("active");
   const today = shanghaiToday();
   const usable = (student: any) => (!student.expiresAt || student.expiresAt >= today) && (student.cardType !== "times" || Number(student.remainingLessons) > 0);
@@ -762,7 +809,7 @@ function StudentManager({ students, add, detail, edit, resetPassword }: any) {
             <b>{student.name}</b>
             <p>{cards[student.cardType]} · {student.cardType === "times" ? `剩余 ${student.remainingLessons} 课时 · ` : ""}{student.expiresAt ? `有效期 ${student.expiresAt}` : `首次完成课程后起算 ${student.validityDays} 天`}</p>
             <small className={tab === "inactive" ? "course-cancelled" : tab === "reminders" ? "student-reminder" : ""}>{tab === "inactive" ? reason(student) : tab === "reminders" ? reminderReason(student) : student.username}</small>
-            <div className="student-actions"><button className="outline" onClick={() => detail(student)}>详情</button><button className="outline" onClick={() => edit(student)}>编辑资料</button><button className="outline" onClick={() => resetPassword(student.studentId)}>重置密码</button></div>
+            <div className="student-actions"><button className="outline" onClick={() => detail(student)}>详情</button><button className="outline" onClick={() => book(student)}>代预约</button><button className="outline" onClick={() => edit(student)}>编辑资料</button><button className="outline" onClick={() => resetPassword(student.studentId)}>重置密码</button></div>
           </article>
         )) : <p className="empty">{tab === "active" ? "暂无正常学生。" : tab === "reminders" ? "暂无需要提醒的学生。" : "暂无已过期或课时用完的学生。"}</p>}
       </div>
