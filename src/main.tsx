@@ -68,6 +68,7 @@ function hasCourseEnded(schedule: any) {
   return schedule?.status === "completed" || Date.now() >= end;
 }
 function Login({ done }: any) {
+  const [rememberMe, setRememberMe] = useState(false);
   const [u, su] = useState(""),
     [p, sp] = useState(""),
     [e, se] = useState("");
@@ -76,7 +77,7 @@ function Login({ done }: any) {
     try {
       let r = await api("/v1/auth/login", {
         method: "POST",
-        body: JSON.stringify({ username: u, password: p }),
+        body: JSON.stringify({ username: u, password: p, rememberMe }),
       });
       session.token = r.token;
       done(r.user);
@@ -106,6 +107,10 @@ function Login({ done }: any) {
             onChange={(x) => sp(x.target.value)}
             required
           />
+        </label>
+        <label className="remember-me">
+          <input type="checkbox" name="rememberMe" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} />
+          <span>记住我 30 天</span>
         </label>
         {e && <p className="error">{e}</p>}
         <button>登录</button>

@@ -98,6 +98,8 @@ header > button {
 }
 .login form input:focus { border-color: var(--terracotta); background: var(--card); box-shadow: 0 0 0 3px rgba(180, 90, 61, .12); }
 .login form input::placeholder { color: #a69b8a; }
+.login form label.remember-me { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.login form .remember-me input { width: 18px; height: 18px; margin: 0; padding: 0; flex-shrink: 0; accent-color: var(--terracotta); }
 .field {
   margin-bottom: 19px;
 }
