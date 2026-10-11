@@ -62,6 +62,11 @@ function hasCourseStarted(schedule: any) {
   const start = schedule?.startAt || (schedule?.date && schedule?.startTime ? `${schedule.date}T${schedule.startTime}:00+08:00` : "");
   return Boolean(start && Date.now() >= Date.parse(start));
 }
+function hasCourseEnded(schedule: any) {
+  const start = schedule?.startAt || `${schedule.date}T${schedule.startTime}:00+08:00`;
+  const end = schedule?.endAt ? Date.parse(schedule.endAt) : Date.parse(start) + Number(schedule.duration) * 60_000;
+  return schedule?.status === "completed" || Date.now() >= end;
+}
 function Login({ done }: any) {
   const [u, su] = useState(""),
     [p, sp] = useState(""),
@@ -278,15 +283,15 @@ function TeacherBooking({ student, schedules, appointments, back, refresh }: any
   const [submitting, setSubmitting] = useState("");
   const cardUnavailable = (student.expiresAt && student.expiresAt < shanghaiToday()) || (student.cardType === "times" && Number(student.remainingLessons) <= 0);
   const choices = schedules
-    .filter((course: any) => course.status === "open" && course.allowBooking && !hasCourseStarted(course))
+    .filter((course: any) => ["open", "completed"].includes(course.status) && course.allowBooking)
     .sort((a: any, b: any) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`));
   async function reserve(course: any) {
-    if (!confirm(`确认代「${student.name}」预约 ${course.date} ${course.startTime} 的「${course.courseName}」？${student.cardType === "times" ? "将扣除 1 课时。" : ""}`)) return;
+    if (!confirm(`确认代「${student.name}」${hasCourseEnded(course) ? "补记已参加的课程" : "预约"} ${course.date} ${course.startTime} 的「${course.courseName}」？${student.cardType === "times" ? "将扣除 1 课时。" : ""}${hasCourseStarted(course) ? "提交后学生不可自行取消，请确认尚未手工扣课时。" : ""}`)) return;
     setSubmitting(course.scheduleId);
     try {
-      await api(`/v1/students/${student.studentId}/book`, { method: "POST", body: JSON.stringify({ scheduleId: course.scheduleId }) });
+      const result = await api(`/v1/students/${student.studentId}/book`, { method: "POST", body: JSON.stringify({ scheduleId: course.scheduleId }) });
       await refresh();
-      alert("已为学生预约，等待老师确认。");
+      alert(result.status === "completed" ? "已补记课程并完成课时记录。" : "已为学生预约，等待老师确认。");
       back();
     } catch (error) {
       alert((error as Error).message);
@@ -305,14 +310,14 @@ function TeacherBooking({ student, schedules, appointments, back, refresh }: any
         <div className="heading"><h2>可代预约课程</h2><span>{choices.length}</span></div>
         <div className="panel">
           {choices.length ? choices.map((course: any) => {
-            const alreadyBooked = appointments.some((appointment: any) => appointment.studentId === student.studentId && appointment.scheduleId === course.scheduleId && ["pending", "booked", "confirmed"].includes(appointment.status));
+            const alreadyBooked = appointments.some((appointment: any) => appointment.studentId === student.studentId && appointment.scheduleId === course.scheduleId && ["pending", "booked", "confirmed", "completed"].includes(appointment.status));
             const unavailable = cardUnavailable || alreadyBooked || course.bookedCount >= course.capacity || Boolean(submitting);
             return <article className="row" key={course.scheduleId}>
               <b>{course.date} {course.startTime} · {course.courseName}</b>
               <p>{course.classType === "custom" ? "定制课" : "成人日常课"} · {course.duration} 分钟 · 剩余 {course.capacity - course.bookedCount} 人</p>
-              <button className="outline" disabled={unavailable} onClick={() => reserve(course)}>{submitting === course.scheduleId ? "正在预约…" : alreadyBooked ? "已预约" : course.bookedCount >= course.capacity ? "课程已满" : "代预约"}</button>
+              <button className="outline" disabled={unavailable} onClick={() => reserve(course)}>{submitting === course.scheduleId ? "正在预约…" : alreadyBooked ? "已有记录" : course.bookedCount >= course.capacity ? "课程已满" : hasCourseEnded(course) ? "代补记" : "代预约"}</button>
             </article>;
-          }) : <p className="empty">暂无尚未开始且开放预约的课程。</p>}
+          }) : <p className="empty">暂无开放预约的未取消课程。</p>}
         </div>
       </section>
     </Page>
@@ -943,7 +948,7 @@ function Student() {
   let days = Array.from({ length: 7 }, (_, i) => addDays(shanghaiToday(), i)),
     visible = s.filter(
       (x) =>
-        x.status === "open" &&
+        ["open", "completed"].includes(x.status) &&
         x.classType === kind &&
         (kind === "custom" || x.date === day),
     );
@@ -1022,7 +1027,7 @@ function Student() {
             </div>
             <label className="date-picker">
               <span>选择其他日期</span>
-              <input type="date" min={shanghaiToday()} value={day} onChange={(event) => sd(event.target.value)} />
+              <input type="date" value={day} onChange={(event) => sd(event.target.value)} />
             </label>
           </>
         )}
@@ -1031,11 +1036,12 @@ function Student() {
             const activeAppointment = appointments.find(
               (appointment) =>
                 appointment.scheduleId === x.scheduleId &&
-                ["pending", "confirmed"].includes(appointment.status),
+                ["pending", "booked", "confirmed", "completed"].includes(appointment.status),
             );
             const isBooked = Boolean(activeAppointment);
             const pastCutoff = isPastCancellationCutoff(x);
             const started = hasCourseStarted(x);
+            const ended = hasCourseEnded(x);
             return (
               <article className="panel slot" key={x.scheduleId}>
                 <div>
@@ -1047,19 +1053,19 @@ function Student() {
                     {x.duration} 分钟 · 剩余 {x.capacity - x.bookedCount} 人
                   </small>
                   <small className="rule-note">
-                    {started ? "课程已开始，不能预约或取消" : pastCutoff ? "距开课不足 2 小时，预约后不可取消" : "开课前 2 小时可免费取消"}
+                    {ended ? "课程已结束，可补记已参加的课程；提交后不可自行取消" : started ? "课程进行中，仍可预约；预约后不可自行取消" : pastCutoff ? "距开课不足 2 小时，预约后不可取消" : "开课前 2 小时可免费取消"}
                   </small>
                 </div>
                 {isBooked ? (
                   <span className="booked">
-                    ✓ {activeAppointment.status === "confirmed" ? "预约已确认" : "预约成功，待老师确认"}
+                    ✓ {activeAppointment.status === "completed" ? "已完成，已有课时记录" : activeAppointment.status === "confirmed" ? "预约已确认" : "预约成功，待老师确认"}
                   </span>
                 ) : (
                   <button
                     className="outline book-action"
-                    disabled={accountUnavailable || !x.allowBooking || x.bookedCount >= x.capacity || started}
+                    disabled={accountUnavailable || !x.allowBooking || x.bookedCount >= x.capacity}
                     onClick={async () => {
-                      if (confirm("确认预约这个时间段？")) {
+                      if (confirm(`${ended ? "确认补记已参加的这节课程？" : "确认预约这个时间段？"}${p.cardType === "times" ? "将扣除 1 课时。" : ""}${started ? "提交后不可自行取消，请确认尚未由老师手工扣课时。" : ""}`)) {
                         try {
                           await api(`/v1/schedules/${x.scheduleId}/book`, {
                             method: "POST",
@@ -1071,7 +1077,7 @@ function Student() {
                       }
                     }}
                   >
-                    {accountUnavailable ? "课程卡不可用" : "预约"}
+                    {accountUnavailable ? "课程卡不可用" : !x.allowBooking ? "未开放预约" : x.bookedCount >= x.capacity ? "课程已满" : ended ? "补记课程" : "预约"}
                   </button>
                 )}
               </article>
